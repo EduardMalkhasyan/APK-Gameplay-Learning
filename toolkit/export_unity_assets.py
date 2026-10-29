@@ -143,7 +143,7 @@ def main():
     args = parser.parse_args()
     out = args.output.expanduser().resolve()
     if out == REPOSITORY or REPOSITORY in out.parents:
-        parser.exit(2, 'Asset export failed: the output must be outside this repository (use ~/apk-work/<run-id>/assets)\n')
+        parser.exit(2, 'Asset export failed: the output must be outside this repository (use ~/Desktop/apk-work/<run-id>/assets)\n')
     if out.exists() and any(out.iterdir()):
         parser.exit(2, 'Asset export failed: %s is not empty\n' % out)
     try:

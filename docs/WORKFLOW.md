@@ -10,7 +10,7 @@ Do not infer source language from the game genre. Do not assume a downloaded spl
 
 ## 2. Create an isolated work folder
 
-Use `~/apk-work/<run-id>/`, outside the repository, and delete it when you are done. Next to METHOD.md's `package.xapk`, `unzipped/` and `assets/`, keep these areas separate:
+Use `~/Desktop/apk-work/<run-id>/`, outside the repository, and delete it when you are done. Next to METHOD.md's `package.xapk`, `unzipped/` and `assets/`, keep these areas separate:
 
 - `input/`: unchanged input or a reference to its original path and hash.
 - `evidence/`: tool revisions, commands, logs, address maps, disassembly and decoded constants.
@@ -52,4 +52,4 @@ Update this repository only with reusable process/tool improvements. Keep case c
 
 ## Suggested AI prompt
 
-Read AGENTS.md, docs/METHOD.md, docs/WORKFLOW.md, docs/LESSONS_LEARNED.md and docs/ENGINE_ROUTES.md. Inventory the supplied package in ~/apk-work/<run-id>/. Select a compatible route. Read data before code, then trace the requested mechanic across callers, state, data and persistence. Preserve raw evidence; produce small readable reconstructions only where supported. Cite asset paths, method paths and native addresses, separate confirmed/inferred/unknown behavior, and never invent missing methods or copy original game repository source. Finish with the general pattern for an original design: never clone the game.
+Read AGENTS.md, docs/METHOD.md, docs/WORKFLOW.md, docs/LESSONS_LEARNED.md and docs/ENGINE_ROUTES.md. Inventory the supplied package in ~/Desktop/apk-work/<run-id>/. Select a compatible route. Read data before code, then trace the requested mechanic across callers, state, data and persistence. Preserve raw evidence; produce small readable reconstructions only where supported. Cite asset paths, method paths and native addresses, separate confirmed/inferred/unknown behavior, and never invent missing methods or copy original game repository source. Finish with the general pattern for an original design: never clone the game.

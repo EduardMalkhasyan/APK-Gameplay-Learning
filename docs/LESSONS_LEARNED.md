@@ -57,4 +57,4 @@ Use compiler checks for syntax/contracts, mocks for explicit modeled cases, and 
 
 ## Repository boundary
 
-This repository holds tools, method docs, blank templates and synthetic examples only: no game's files, ever. Work in `~/apk-work/<run-id>/` outside the repository and delete it afterwards. Learn the pattern and never clone the game. Tool repositories can inform generic fixes; original game repository source must never fill recovery gaps. Keep all upstream licenses.
+This repository holds tools, method docs, blank templates and synthetic examples only: no game's files, ever. Work in `~/Desktop/apk-work/<run-id>/` outside the repository and delete it afterwards. Learn the pattern and never clone the game. Tool repositories can inform generic fixes; original game repository source must never fill recovery gaps. Keep all upstream licenses.

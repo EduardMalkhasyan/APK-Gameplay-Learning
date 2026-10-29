@@ -2,7 +2,7 @@
 
 Tools and a step-by-step method for opening an Android game package (APK, XAPK, APKS, APKM) and reading how the game works: gameplay code, sprites, textures, 3D models, sounds and level data. The goal is to learn patterns and make better **original** games.
 
-Like Photoshop without photos: this repository holds the tools and the method, never a game. Packages, extracted files and per-game notes live in `~/apk-work/<run-id>/`, outside the repository, and get deleted when you are done.
+Like Photoshop without photos: this repository holds the tools and the method, never a game. Packages, extracted files and per-game notes live in `~/Desktop/apk-work/<run-id>/`, outside the repository, and get deleted when you are done.
 
 ## Rules
 
@@ -16,7 +16,7 @@ Like Photoshop without photos: this repository holds the tools and the method, n
 2. Inventory the package:
 
    ```sh
-   python3 toolkit/inspect_package.py ~/apk-work/<run-id>/package.xapk
+   python3 toolkit/inspect_package.py ~/Desktop/apk-work/<run-id>/package.xapk
    ```
 
 3. Follow the engine's route in [docs/METHOD.md](docs/METHOD.md) and [docs/ENGINE_ROUTES.md](docs/ENGINE_ROUTES.md).
@@ -46,8 +46,8 @@ For AI agents: [AGENTS.md](AGENTS.md) (Claude reads it via [CLAUDE.md](CLAUDE.md
 Requires Python 3 and .NET 10. Tested on macOS ARM64.
 
 ```sh
-python3 toolkit/recover_gameplay.py ~/apk-work/<run-id>/package.xapk \
-  --output ~/apk-work/<run-id>/unity-export
+python3 toolkit/recover_gameplay.py ~/Desktop/apk-work/<run-id>/package.xapk \
+  --output ~/Desktop/apk-work/<run-id>/unity-export
 ```
 
 Exit 2 means a partial export: read its `quality.json`. A successful export shows what the tools could recover. It never proves that you have the original source.

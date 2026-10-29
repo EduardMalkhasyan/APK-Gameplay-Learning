@@ -1,6 +1,6 @@
 # Method: open a game package and read how it plays
 
-This repository is the toolbox and the method, like Photoshop without photos. It never holds a game. The package you study, everything you extract from it and your notes about it live in a work folder outside the repository, `~/apk-work/<run-id>/`, and you delete that folder when you are done. The steps are written for Android packages.
+This repository is the toolbox and the method, like Photoshop without photos. It never holds a game. The package you study, everything you extract from it and your notes about it live in a work folder outside the repository, `~/Desktop/apk-work/<run-id>/`, and you delete that folder when you are done. The steps are written for Android packages.
 
 ## 0. Rules
 
@@ -15,7 +15,7 @@ This repository is the toolbox and the method, like Photoshop without photos. It
 - Most native tools work best on `arm64-v8a`. If only `armeabi-v7a` is present, expect fewer recovered method bodies.
 
 ```sh
-cd ~/apk-work/<run-id>
+cd ~/Desktop/apk-work/<run-id>
 shasum -a 256 package.xapk
 unzip -l package.xapk | tail -1             # total unpacked size: stop if it is far bigger than expected
 mkdir splits unzipped
@@ -29,8 +29,8 @@ For a single APK, run `unzip -q package.apk -d unzipped`. Check that `unzipped/a
 ## 2. Find the engine
 
 ```sh
-python3 toolkit/inspect_package.py ~/apk-work/<run-id>/package.xapk
-find ~/apk-work/<run-id>/unzipped -maxdepth 3 | sort | less
+python3 toolkit/inspect_package.py ~/Desktop/apk-work/<run-id>/package.xapk
+find ~/Desktop/apk-work/<run-id>/unzipped -maxdepth 3 | sort | less
 ```
 
 The inventory flags Unity, Flutter, Godot, Unreal and Cocos libraries plus Lua and web files. For the other engines, compare the file list with this table.
@@ -67,7 +67,7 @@ Then export:
 
 ```sh
 ~/.venvs/unitypy/bin/python -I toolkit/export_unity_assets.py \
-  ~/apk-work/<run-id>/unzipped ~/apk-work/<run-id>/assets
+  ~/Desktop/apk-work/<run-id>/unzipped ~/Desktop/apk-work/<run-id>/assets
 ```
 
 The exporter does the following:
@@ -107,13 +107,13 @@ What we learned:
 
 | Engine | Tool and command | What you get |
 | --- | --- | --- |
-| Unity Mono | From the repository folder (needs .NET 10): `dotnet toolkit/ILSpy/ilspycmd.dll -p -o ~/apk-work/<run-id>/code ~/apk-work/<run-id>/unzipped/assets/bin/Data/Managed/Assembly-CSharp.dll`, or `toolkit/recover_gameplay.py` | Readable C#, formulas verbatim |
+| Unity Mono | From the repository folder (needs .NET 10): `dotnet toolkit/ILSpy/ilspycmd.dll -p -o ~/Desktop/apk-work/<run-id>/code ~/Desktop/apk-work/<run-id>/unzipped/assets/bin/Data/Managed/Assembly-CSharp.dll`, or `toolkit/recover_gameplay.py` | Readable C#, formulas verbatim |
 | Unity IL2CPP | Names: Cpp2IL or Il2CppInspectorRedux on `libil2cpp.so` + `global-metadata.dat` give classes, fields, methods and RVAs. Il2CppDumper only supports Unity 5.3 to 2022.2. Bodies: `toolkit/recover_gameplay.py` (partial, read its `quality.json`) or Ghidra at those RVAs. | Full names, partial bodies |
 | Flutter | Blutter (arm64) or Jadart Tier 2 (arm32) on `libapp.so`; see [ENGINE_ROUTES](ENGINE_ROUTES.md) | Names, pseudo-assembly; numbers sit in the object pool |
 | Cocos JS | 1. Find the key: a short ASCII string in `libcocos*.so`. List candidates with `strings`, or in Ghidra read the string passed to `jsb_set_xxtea_key` / `xxtea_decrypt`. 2. Decrypt each `.jsc` with Cocos's own xxtea variant: pad the key with zero bytes to 16, decrypt the whole file without padding, then keep only the first N bytes, where N is the file's last 4 bytes read as a little-endian number. Libraries with default PKCS#7 padding fail. 3. Gunzip the result if it starts with `1F 8B`. | Plain JS with the whole gameplay |
 | Cocos2d-x Lua | Strip the sign prefix from each `.luac`, then decrypt as for Cocos JS. The key and the sign are strings in `libcocos2dlua.so`. | Lua or Lua bytecode |
-| React Native | Run `file` on `index.android.bundle`. If it says Hermes JavaScript bytecode, run `hbc-decompiler index.android.bundle ~/apk-work/<run-id>/code/bundle.js` (hermes-dec); otherwise it is plain JS. | JS or pseudo-JS |
-| Java / Kotlin | `jadx -d ~/apk-work/<run-id>/code base.apk` | Java-like code |
+| React Native | Run `file` on `index.android.bundle`. If it says Hermes JavaScript bytecode, run `hbc-decompiler index.android.bundle ~/Desktop/apk-work/<run-id>/code/bundle.js` (hermes-dec); otherwise it is plain JS. | JS or pseudo-JS |
+| Java / Kotlin | `jadx -d ~/Desktop/apk-work/<run-id>/code base.apk` | Java-like code |
 | Godot | GDRE Tools; C# Godot games ship .NET DLLs, so use ILSpy | GDScript or C# |
 | Lua (Defold, Solar2D, cocos-lua) | Plain `.lua`, or luajit/luac bytecode decompiled with a luajit decompiler or unluac | Lua |
 | GameMaker VM | UndertaleModTool | GML |
@@ -136,6 +136,6 @@ The evidence rules for deep code work are in [WORKFLOW.md](WORKFLOW.md).
 - Write the pattern in your own words, in the "Original design lesson" part of the mechanic record.
 - Change the theme, art, audio, names, numbers and level layouts, and improve at least one thing: onboarding, game feel, pacing or difficulty curve.
 - Write fresh code from the pattern. Never paste recovered code or assets into your project.
-- Delete `~/apk-work/<run-id>/` when you are done.
+- Delete `~/Desktop/apk-work/<run-id>/` when you are done.
 
 See [examples/synthetic-mechanic.md](../examples/synthetic-mechanic.md) for a filled mechanic record based on a made-up game.

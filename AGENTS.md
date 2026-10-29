@@ -4,7 +4,7 @@ Purpose: read how a game works from its compiled package (gameplay code, sprites
 
 - Read docs/METHOD.md first, then docs/LESSONS_LEARNED.md and docs/WORKFLOW.md.
 - **Learn, never clone.** Never ship, publish or paste recovered code, assets, level data or names into the user's project, and never rebuild a specific existing game. Generalize the pattern and design fresh behavior, code and art.
-- **No game files in this repository.** Work in `~/apk-work/<run-id>/` outside the repository. Never commit packages, native libraries, recovered scripts, exported assets, per-game constants, addresses or reports. Commit only reusable tools, method docs, blank templates and synthetic examples or tests.
+- **No game files in this repository.** Work in `~/Desktop/apk-work/<run-id>/` outside the repository. Never commit packages, native libraries, recovered scripts, exported assets, per-game constants, addresses or reports. Commit only reusable tools, method docs, blank templates and synthetic examples or tests.
 - Never claim exact original source recovery, in any language. Separate metadata, native evidence, reconstruction and inference.
 - Identify the engine/runtime, version, architecture and actual package contents before selecting tools. Do not assume Unity or C#. Ask for the full bundle (XAPK/APKS with the arm64 split and asset packs) when splits are missing.
 - Use the matching route in docs/METHOD.md and docs/ENGINE_ROUTES.md. Documentation for a route does not mean that recovery is implemented or verified here.

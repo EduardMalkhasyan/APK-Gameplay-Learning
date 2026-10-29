@@ -5,10 +5,10 @@ This directory tests ARM64 floating comparison flags and branch-condition loweri
 On an Apple Silicon Mac, from the repository root:
 
 ```sh
-mkdir -p ~/apk-work/fp-check
+mkdir -p ~/Desktop/apk-work/fp-check
 clang -O0 -arch arm64 toolkit/Verification/native-fp-oracle.c \
-  toolkit/Verification/native-fp-oracle.s -o ~/apk-work/fp-check/oracle
-~/apk-work/fp-check/oracle > ~/apk-work/fp-check/result.json
+  toolkit/Verification/native-fp-oracle.s -o ~/Desktop/apk-work/fp-check/oracle
+~/Desktop/apk-work/fp-check/oracle > ~/Desktop/apk-work/fp-check/result.json
 ```
 
 The C model includes normal values, infinities, NaNs and signed zero. Passing validates only these primitives and sampled values, not whole methods or any gameplay equivalence. No recovered game code or Unicorn is executed.

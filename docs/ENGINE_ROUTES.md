@@ -33,7 +33,7 @@ jadart verify /absolute/path/libapp.so
 jadart classes /absolute/path/libapp.so -l package:<app>/
 jadart functions /absolute/path/libapp.so -l package:<app>/ -n 0
 jadart disasm /absolute/path/libapp.so <native-address>
-jadart export /absolute/path/libapp.so -o ~/apk-work/<run-id>/raw -t 2 -a
+jadart export /absolute/path/libapp.so -o ~/Desktop/apk-work/<run-id>/raw -t 2 -a
 ```
 
 Use `--help` from the installed revision; CLI and support can change. `-a` may include non-framework vendor packages, so scope app-owned library URIs explicitly. Preserve the whole raw export but present only verified app-owned ranges as gameplay. Class listings and per-library exports can expose different subsets of functions; compare their native range inventories before calling a method absent.

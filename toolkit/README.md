@@ -3,7 +3,7 @@
 ## Inventory any new input first
 
 ```sh
-python3 toolkit/inspect_package.py ~/apk-work/<run-id>/package.xapk
+python3 toolkit/inspect_package.py ~/Desktop/apk-work/<run-id>/package.xapk
 ```
 
 Standard-library-only, read-only inventory for ZIP-based APK/XAPK/AAB/IPA packages and direct ELF libraries. APK splits are inspected one level deep without extracting their filenames. Outputs hashes, observed ABI paths/ELF architecture, payload locations and heuristic runtime signals. It does not recover code, infer gameplay, parse every engine version, detect every custom runtime or resolve encrypted assets. Keep its output in the work folder, outside the repository.
@@ -15,15 +15,15 @@ See ../docs/METHOD.md for assets and the next tool to select. The remaining comm
 Requires Python 3 and .NET 10. The bundled patched engine was exercised on macOS ARM64; other host/target combinations remain unverified.
 
 ```sh
-python3 toolkit/recover_gameplay.py ~/apk-work/<run-id>/package.xapk \
-  --output ~/apk-work/<run-id>/unity-export
+python3 toolkit/recover_gameplay.py ~/Desktop/apk-work/<run-id>/package.xapk \
+  --output ~/Desktop/apk-work/<run-id>/unity-export
 ```
 
 Select application namespaces explicitly when known:
 
 ```sh
-python3 toolkit/recover_gameplay.py ~/apk-work/<run-id>/package.xapk \
-  --output ~/apk-work/<run-id>/unity-export \
+python3 toolkit/recover_gameplay.py ~/Desktop/apk-work/<run-id>/package.xapk \
+  --output ~/Desktop/apk-work/<run-id>/unity-export \
   --include-namespace YourGame
 ```
 
