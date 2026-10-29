@@ -1,0 +1,7 @@
+{
+  "kind": "synthetic floating-point compare/branch fixture",
+  "compareWord": 505487360,
+  "leftRegister": 0,
+  "rightRegister": 1,
+  "condition": 11
+}

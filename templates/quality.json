@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "input": {
+    "path": null,
+    "sha256": null
+  },
+  "runtime": {
+    "engine": null,
+    "version": null,
+    "architecture": null,
+    "backend": null
+  },
+  "tool_revisions": [],
+  "quality_gate": "unassessed",
+  "original_source_recovered": false,
+  "native_equivalence_verified": false,
+  "checks": [],
+  "methods": [],
+  "assumptions": [],
+  "unknowns": [],
+  "next_action": null
+}

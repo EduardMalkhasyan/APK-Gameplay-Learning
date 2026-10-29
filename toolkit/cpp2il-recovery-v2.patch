@@ -1,0 +1,803 @@
+--- a/Cpp2IL.Core/ISIL/LocalVariable.cs
++++ b/Cpp2IL.Core/ISIL/LocalVariable.cs
+@@ -11,6 +11,7 @@
+     /// null if typeprop has not been done yet, or if the type could not be determined.
+     /// </summary>
+     public TypeAnalysisContext? Type = type;
++    public int ParameterIndex = -1;
+ 
+     public bool IsThis = false;
+     public bool IsReturn = false;
+--- a/Cpp2IL.Core/Analysis/LocalVariables.cs
++++ b/Cpp2IL.Core/Analysis/LocalVariables.cs
+@@ -121,12 +121,45 @@
+             if (method.ParameterOperands[operandIndex] is not Register reg)
+                 continue;
+ 
++            var hfaFields = Arm64CallingConventionResolver.GetHfaFields(method.Parameters[i].ParameterType);
+             var local = method.Locals.FirstOrDefault(l => l.Register.Number == reg.Number && l.Register.Version == -1);
++            if (local == null && hfaFields.Length > 0 && reg.Name.StartsWith("V"))
++            {
++                local = new LocalVariable(method.Parameters[i].ParameterName, reg, method.Parameters[i].ParameterType);
++                method.Locals.Add(local);
++            }
+             if (local == null)
+-                continue;
++            {
++                continue;
++            }
+ 
+             local.Name = method.Parameters[i].ParameterName;
++            local.ParameterIndex = i;
++            local.Type = method.Parameters[i].ParameterType;
+             paramLocals.Add(local);
++            if (hfaFields.Length > 0 && reg.Name.StartsWith("V"))
++            {
++                var firstRegister = int.Parse(reg.Name.Substring(1));
++                for (var fieldIndex = 0; fieldIndex < hfaFields.Length; fieldIndex++)
++                {
++                    var registerName = "V" + (firstRegister + fieldIndex);
++                    var component = method.Locals.FirstOrDefault(candidate => candidate.Register.Name == registerName && candidate.Register.Version == -1);
++                    if (component == null)
++                    {
++                        continue;
++                    }
++                    foreach (var instruction in method.ControlFlowGraph!.Instructions)
++                    {
++                        for (var sourceOperandIndex = 0; sourceOperandIndex < instruction.Operands.Count; sourceOperandIndex++)
++                        {
++                            if (ReferenceEquals(instruction.Operands[sourceOperandIndex], component) && ReferenceEquals(instruction.Destination, component) == false)
++                            {
++                                instruction.SetOperand(sourceOperandIndex, new FieldReference(hfaFields[fieldIndex], local, hfaFields[fieldIndex].Offset - hfaFields[0].Offset));
++                            }
++                        }
++                    }
++                }
++            }
+         }
+ 
+         // Add MethodInfo*
+@@ -430,8 +463,28 @@
+                 case OpCode.Divide or OpCode.Modulo:
+                     changed |= PropagateArithmetic(instruction, method) || PropagateIntegerResult(instruction, method);
+                     break;
+-                case OpCode.And or OpCode.Or or OpCode.Xor or OpCode.Not or OpCode.Negate
+-                    or OpCode.ShiftLeft or OpCode.ShiftRight:
++                case OpCode.And or OpCode.Or or OpCode.Xor or OpCode.Not:
++                    var booleanOperands = instruction.Operands.Count > 1;
++                    for (var operandIndex = 1; operandIndex < instruction.Operands.Count; operandIndex++)
++                    {
++                        var operandType = instruction.Operands[operandIndex] switch
++                        {
++                            LocalVariable local => local.Type,
++                            FieldReference field => field.Field.FieldType,
++                            _ => null
++                        };
++                        booleanOperands &= operandType?.FullName == "System.Boolean";
++                    }
++                    if (booleanOperands && instruction.Operands[0] is LocalVariable booleanDestination)
++                    {
++                        changed |= SetTypeIfUnknown(booleanDestination, method.AppContext.SystemTypes.SystemBooleanType);
++                    }
++                    else
++                    {
++                        changed |= PropagateIntegerResult(instruction, method);
++                    }
++                    break;
++                case OpCode.Negate or OpCode.ShiftLeft or OpCode.ShiftRight:
+                     changed |= PropagateIntegerResult(instruction, method);
+                     break;
+             }
+@@ -698,18 +751,13 @@
+         if (method.Parameters.Count == 0)
+             return;
+ 
+-        // Normal params
+-        var paramIndex = 0;
+         foreach (var local in method.ParameterLocals)
+         {
+-            if (local.IsThis || local.IsMethodInfo)
+-                continue;
+-
+-            if (paramIndex >= method.Parameters.Count)
+-                break;
+-
+-            local.Type = method.Parameters[paramIndex].ParameterType;
+-            paramIndex++;
++            if (local.ParameterIndex < 0 || local.ParameterIndex >= method.Parameters.Count)
++            {
++                continue;
++            }
++            local.Type = method.Parameters[local.ParameterIndex].ParameterType;
+         }
+     }
+ 
+--- a/Cpp2IL.Core/Analysis/MetadataResolver.cs
++++ b/Cpp2IL.Core/Analysis/MetadataResolver.cs
+@@ -67,6 +67,45 @@
+     private static void ResolveMetadataUsages(MethodAnalysisContext method)
+     {
+         var libContext = method.AppContext.LibCpp2IlContext;
++        var definitions = new Dictionary<LocalVariable, Instruction>();
++        foreach (var candidate in method.ControlFlowGraph!.Instructions)
++        {
++            if (candidate.Destination is LocalVariable destination)
++            {
++                definitions[destination] = candidate;
++            }
++        }
++
++        ulong ResolveIndirectAddress(MemoryOperand memory)
++        {
++            if (memory.Base is not LocalVariable local || memory.Index != null || memory.Scale != 0)
++            {
++                return 0;
++            }
++            var visited = new HashSet<LocalVariable>();
++            while (visited.Add(local) && definitions.TryGetValue(local, out var definition) && definition.OpCode == OpCode.Move && definition.Operands.Count == 2)
++            {
++                if (definition.Operands[1] is LocalVariable next)
++                {
++                    local = next;
++                    continue;
++                }
++                if (definition.Operands[1] is MemoryOperand { Base: null, Index: null, Scale: 0 } absolute)
++                {
++                    try
++                    {
++                        var pointer = method.AppContext.Binary.ReadPointerAtVirtualAddress((ulong)absolute.Addend);
++                        return unchecked(pointer + (ulong)memory.Addend);
++                    }
++                    catch
++                    {
++                        return 0;
++                    }
++                }
++                break;
++            }
++            return 0;
++        }
+ 
+         foreach (var instruction in method.ControlFlowGraph!.Instructions)
+         {
+@@ -80,6 +119,7 @@
+             {
+                 MemoryOperand { Base: null, Index: null, Scale: 0 } memory => (ulong)memory.Addend,
+                 Immediate immediate => immediate.UnsignedValue,
++                MemoryOperand indirect => ResolveIndirectAddress(indirect),
+                 _ => 0ul,
+             };
+ 
+@@ -133,6 +173,14 @@
+     public static bool ResolveFieldOffsets(MethodAnalysisContext method)
+     {
+         var changed = false;
++        var definitions = new Dictionary<LocalVariable, Instruction>();
++        foreach (var candidate in method.ControlFlowGraph!.Instructions)
++        {
++            if (candidate.Destination is LocalVariable destination)
++            {
++                definitions[destination] = candidate;
++            }
++        }
+ 
+         foreach (var instruction in method.ControlFlowGraph!.Instructions)
+         {
+@@ -147,6 +195,48 @@
+                 if (memory.Index != null || memory.Scale != 0)
+                     continue;
+ 
++                var originalBase = memory.Base;
++                var originalAddend = memory.Addend;
++                var visited = new HashSet<LocalVariable>();
++                for (var depth = 0; depth < 16 && memory.Base is LocalVariable alias && visited.Add(alias); depth++)
++                {
++                    if (definitions.TryGetValue(alias, out var definition) == false)
++                    {
++                        break;
++                    }
++                    if (definition.OpCode == OpCode.Move && definition.Operands.Count == 2 && definition.Operands[1] is LocalVariable copied)
++                    {
++                        memory.Base = copied;
++                        continue;
++                    }
++                    if (definition.OpCode == OpCode.Add && definition.Operands.Count == 3)
++                    {
++                        if (definition.Operands[1] is LocalVariable baseLocal && definition.Operands[2] is Immediate offset)
++                        {
++                            memory.Base = baseLocal;
++                            memory.Addend += offset.Value;
++                            continue;
++                        }
++                        if (definition.Operands[2] is LocalVariable reverseBase && definition.Operands[1] is Immediate reverseOffset)
++                        {
++                            memory.Base = reverseBase;
++                            memory.Addend += reverseOffset.Value;
++                            continue;
++                        }
++                    }
++                    if (definition.OpCode == OpCode.Subtract && definition.Operands.Count == 3 && definition.Operands[1] is LocalVariable subtractBase && definition.Operands[2] is Immediate subtractOffset)
++                    {
++                        memory.Base = subtractBase;
++                        memory.Addend -= subtractOffset.Value;
++                        continue;
++                    }
++                    break;
++                }
++                if (ReferenceEquals(originalBase, memory.Base) == false || originalAddend != memory.Addend)
++                {
++                    instruction.SetOperand(i, memory);
++                    changed = true;
++                }
+                 if (memory.Base is not LocalVariable local || local?.Type == null)
+                     continue;
+ 
+@@ -231,7 +321,12 @@
+                 // type, which either throw it themselves or build it and hand it back for the caller to raise.
+                 if (ThrowHelperRecovery.GetThrownException(method.AppContext, target) is { } thrown)
+                 {
+-                    if (callInstruction.Destination is LocalVariable produced && method.ControlFlowGraph!.Instructions.Any(i => i.Sources.Any(s => ReferenceEquals(s, produced))))
++                    if (ThrowHelperRecovery.IsExceptionRaiser(method.AppContext, target))
++                    {
++                        callInstruction.OpCode = OpCode.Throw;
++                        callInstruction.SetOperands(thrown);
++                    }
++                    else if (callInstruction.Destination is LocalVariable produced && method.ControlFlowGraph!.Instructions.Any(i => i.Sources.Any(s => ReferenceEquals(s, produced))))
+                     {
+                         callInstruction.OpCode = OpCode.Newobj;
+                         callInstruction.SetOperands(produced, thrown);
+--- /dev/null
++++ b/Cpp2IL.Core/Analysis/Arm64Recovery.cs
+@@ -0,0 +1,174 @@
++using Cpp2IL.Core.ISIL;
++using Cpp2IL.Core.Model.Contexts;
++using Cpp2IL.Core.Utils;
++
++namespace Cpp2IL.Core.Analysis;
++
++public static class Arm64Recovery
++{
++    public static void RecoverNativeDetails(MethodAnalysisContext method)
++    {
++        if (method.ControlFlowGraph == null)
++        {
++            return;
++        }
++        var binary = method.AppContext.Binary;
++        uint ReadWord(ulong address)
++        {
++            if (binary.TryMapVirtualAddressToRaw(address, out var raw) == false || raw < 0 || raw + 4 > binary.RawLength)
++            {
++                return 0;
++            }
++            return System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(binary.GetRawBinaryContent().Slice((int)raw, 4));
++        }
++        ulong FollowBranch(ulong address)
++        {
++            var visited = new System.Collections.Generic.HashSet<ulong>();
++            for (var depth = 0; depth < 16 && visited.Add(address); depth++)
++            {
++                var word = ReadWord(address);
++                if ((word & 0xFC000000) != 0x14000000)
++                {
++                    return address;
++                }
++                var offset = ((int)(word << 6)) >> 4;
++                address = unchecked(address + (ulong)(long)offset);
++            }
++            return 0;
++        }
++        var export = binary.GetVirtualAddressOfExportedFunctionByName("il2cpp_gc_wbarrier_set_field");
++        ulong barrier = 0;
++        if (export != 0 && ReadWord(export) == 0xAA0103E0 && ReadWord(export + 4) == 0xAA0203E1)
++        {
++            var store = FollowBranch(export + 8);
++            if (store != 0 && ReadWord(store) == 0xF9000001)
++            {
++                barrier = FollowBranch(store + 4);
++            }
++        }
++        foreach (var instruction in method.ControlFlowGraph.Instructions)
++        {
++            if (barrier != 0 && instruction.OpCode == OpCode.Call && instruction.Operands.Count > 0 && instruction.Operands[0] is Immediate target && FollowBranch(target.UnsignedValue) == barrier)
++            {
++                instruction.OpCode = OpCode.Nop;
++                instruction.SetOperands();
++                continue;
++            }
++            TypeAnalysisContext? destinationType = instruction.Destination switch
++            {
++                LocalVariable local => local.Type,
++                FieldReference field => field.Field.FieldType,
++                _ => null
++            };
++            if (destinationType?.FullName is not ("System.Single" or "System.Double"))
++            {
++                continue;
++            }
++            if (instruction.OpCode is not (OpCode.Move or OpCode.Multiply or OpCode.Add or OpCode.Subtract or OpCode.Divide))
++            {
++                continue;
++            }
++            for (var index = 1; index < instruction.Operands.Count; index++)
++            {
++                if (instruction.Operands[index] is not MemoryOperand { Base: null, Index: null, Scale: 0 } memory)
++                {
++                    continue;
++                }
++                var size = destinationType.FullName == "System.Single" ? 4 : 8;
++                var rawBinary = binary.GetRawBinaryContent();
++                var readOnly = false;
++                if (rawBinary.Length >= 64 && rawBinary[0] == 0x7F && rawBinary[1] == 0x45 && rawBinary[2] == 0x4C && rawBinary[3] == 0x46 && rawBinary[4] == 2 && rawBinary[5] == 1)
++                {
++                    var headers = System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(rawBinary.Slice(32, 8));
++                    var stride = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(rawBinary.Slice(54, 2));
++                    var count = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(rawBinary.Slice(56, 2));
++                    for (var header = 0; header < count; header++)
++                    {
++                        var offset = headers + (ulong)(header * stride);
++                        if (offset + 56 > (ulong)rawBinary.Length)
++                        {
++                            break;
++                        }
++                        var entry = rawBinary.Slice((int)offset, 56);
++                        var kind = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(entry);
++                        var flags = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(entry.Slice(4));
++                        var start = System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(entry.Slice(16));
++                        var length = System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(entry.Slice(32));
++                        var address = (ulong)memory.Addend;
++                        if (kind == 1 && (flags & 2) == 0 && address >= start && address + (ulong)size <= start + length)
++                        {
++                            readOnly = true;
++                            break;
++                        }
++                    }
++                }
++                if (readOnly == false)
++                {
++                    continue;
++                }
++                if (binary.TryMapVirtualAddressToRaw((ulong)memory.Addend, out var raw) == false || raw < 0 || raw + size > binary.RawLength)
++                {
++                    continue;
++                }
++                var bytes = binary.GetRawBinaryContent().Slice((int)raw, size);
++                if (size == 4)
++                {
++                    instruction.SetOperand(index, new FloatLiteral(System.BitConverter.Int32BitsToSingle(System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(bytes))));
++                }
++                else
++                {
++                    instruction.SetOperand(index, new DoubleLiteral(System.BitConverter.Int64BitsToDouble(System.Buffers.Binary.BinaryPrimitives.ReadInt64LittleEndian(bytes))));
++                }
++            }
++        }
++    }
++
++    public static void FoldAggregateCopies(MethodAnalysisContext method)
++    {
++        if (method.ControlFlowGraph == null)
++        {
++            return;
++        }
++        foreach (var block in method.ControlFlowGraph.Blocks)
++        {
++            var instructions = block.Instructions;
++            for (var index = 0; index < instructions.Count; index++)
++            {
++                var instruction = instructions[index];
++                if (instruction.OpCode != OpCode.Move || instruction.Operands.Count != 2 || instruction.Operands[0] is not FieldReference destination || instruction.Operands[1] is not FieldReference source)
++                {
++                    continue;
++                }
++                if (destination.Field.FieldType != source.Local.Type)
++                {
++                    continue;
++                }
++                var fields = Arm64CallingConventionResolver.GetHfaFields(destination.Field.FieldType);
++                if (fields.Length < 2 || source.Field.Name != fields[0].Name || index + fields.Length > instructions.Count)
++                {
++                    continue;
++                }
++                var valid = true;
++                for (var component = 1; component < fields.Length; component++)
++                {
++                    var next = instructions[index + component];
++                    if (next.OpCode != OpCode.Move || next.Operands.Count != 2 || next.Operands[0] is not MemoryOperand memory || memory.Index != null || memory.Scale != 0 || ReferenceEquals(memory.Base, destination.Local) == false || memory.Addend != destination.Offset + fields[component].Offset - fields[0].Offset || next.Operands[1] is not FieldReference fieldSource || ReferenceEquals(fieldSource.Local, source.Local) == false || fieldSource.Field.Name != fields[component].Name)
++                    {
++                        valid = false;
++                        break;
++                    }
++                }
++                if (valid == false)
++                {
++                    continue;
++                }
++                instruction.SetOperand(1, source.Local);
++                for (var component = 1; component < fields.Length; component++)
++                {
++                    instructions[index + component].OpCode = OpCode.Nop;
++                    instructions[index + component].SetOperands();
++                }
++            }
++        }
++    }
++}
+--- a/Cpp2IL.Core/Analysis/ThrowHelperRecovery.cs
++++ b/Cpp2IL.Core/Analysis/ThrowHelperRecovery.cs
+@@ -38,7 +38,27 @@
+         if (appContext.ExceptionRaisersByAddress.TryGetValue(address, out var cached))
+             return cached;
+ 
+-        var raise = appContext.GetOrCreateKeyFunctionAddresses().il2cpp_vm_exception_raise;
++        var keyFunctions = appContext.GetOrCreateKeyFunctionAddresses();
++        var knownRaisers = new HashSet<ulong>
++        {
++            keyFunctions.il2cpp_raise_exception,
++            keyFunctions.il2cpp_vm_exception_raise,
++            keyFunctions.il2cpp_codegen_raise_exception,
++            appContext.Binary.GetVirtualAddressOfExportedFunctionByName("il2cpp_raise_exception")
++        };
++        knownRaisers.Remove(0);
++        if (knownRaisers.Contains(address))
++        {
++            appContext.ExceptionRaisersByAddress[address] = true;
++            return true;
++        }
++        if (appContext.InstructionSet is Cpp2IL.Core.InstructionSets.NewArmV8InstructionSet)
++        {
++            var proven = ReachesArm64RaiserWithoutConditionalFlow(appContext, address, knownRaisers, 0, []);
++            appContext.ExceptionRaisersByAddress[address] = proven;
++            return proven;
++        }
++        var raise = keyFunctions.il2cpp_vm_exception_raise;
+ 
+         if (raise == 0)
+             return false;
+@@ -51,6 +71,47 @@
+ 
+         appContext.ExceptionRaisersByAddress[address] = result;
+         return result;
++    }
++
++    private static bool ReachesArm64RaiserWithoutConditionalFlow(ApplicationAnalysisContext appContext, ulong address, HashSet<ulong> knownRaisers, int depth, HashSet<ulong> visited)
++    {
++        if (knownRaisers.Contains(address))
++        {
++            return true;
++        }
++        if (depth >= 5 || visited.Add(address) == false)
++        {
++            return false;
++        }
++        var binary = appContext.Binary;
++        for (var index = 0; index < 32; index++)
++        {
++            var pc = address + (ulong)(index * 4);
++            if (binary.TryMapVirtualAddressToRaw(pc, out var raw) == false || raw < 0 || raw + 4 > binary.RawLength)
++            {
++                return false;
++            }
++            var word = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(binary.GetRawBinaryContent().Slice((int)raw, 4));
++            if (word == 0 || (word & 0xFE000000) == 0xD6000000 || (word & 0xFF000010) == 0x54000000 || (word & 0x7E000000) == 0x34000000 || (word & 0x7E000000) == 0x36000000 || (word & 0xFFE0001F) == 0xD4200000)
++            {
++                return false;
++            }
++            var branch = word & 0xFC000000;
++            if (branch is 0x14000000 or 0x94000000)
++            {
++                var displacement = ((int)(word << 6)) >> 4;
++                var target = unchecked(pc + (ulong)(long)displacement);
++                if (ReachesArm64RaiserWithoutConditionalFlow(appContext, target, knownRaisers, depth + 1, visited))
++                {
++                    return true;
++                }
++                if (branch == 0x14000000)
++                {
++                    return false;
++                }
++            }
++        }
++        return false;
+     }
+ 
+     private static bool ReachesCall(ApplicationAnalysisContext appContext, ulong address, ulong wanted, int depth, HashSet<ulong> visited)
+--- a/Cpp2IL.Core/Utils/Arm64CallingConventionResolver.cs
++++ b/Cpp2IL.Core/Utils/Arm64CallingConventionResolver.cs
+@@ -1,4 +1,5 @@
+ using System.Collections.Generic;
++using System.Linq;
+ using Cpp2IL.Core.ISIL;
+ using Cpp2IL.Core.Model.Contexts;
+ 
+@@ -12,6 +13,33 @@
+ 
+     private static readonly string[] IntegerRegisters = ["X0", "X1", "X2", "X3", "X4", "X5", "X6", "X7"];
+     private static readonly string[] FloatRegisters = ["V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7"];
++
++    internal static FieldAnalysisContext[] GetHfaFields(TypeAnalysisContext type)
++    {
++        if (type.IsValueType == false || IsFloatingPoint(type))
++        {
++            return [];
++        }
++        var fields = type.Fields.Where(field => field.IsStatic == false).OrderBy(field => field.Offset).ToArray();
++        if (fields.Length < 1 || fields.Length > 4)
++        {
++            return [];
++        }
++        var elementType = fields[0].FieldType;
++        if (IsFloatingPoint(elementType) == false || fields.Any(field => field.FieldType != elementType))
++        {
++            return [];
++        }
++        var elementSize = elementType == type.AppContext.SystemTypes.SystemSingleType ? 4 : 8;
++        for (var index = 0; index < fields.Length; index++)
++        {
++            if (fields[index].Offset - fields[0].Offset != index * elementSize)
++            {
++                return [];
++            }
++        }
++        return TypeSizes.UnboxedSize(type, 8) == fields.Length * elementSize ? fields : [];
++    }
+ 
+     public override Register ReturnRegister(MethodAnalysisContext ctx)
+         => new(null, IsFloatingPoint(ctx.ReturnType) ? "V0" : "X0");
+@@ -50,6 +78,20 @@
+ 
+         void AddParameter(ParameterAnalysisContext? par)
+         {
++            var fields = par == null ? [] : GetHfaFields(par.ParameterType);
++            if (fields.Length > 0)
++            {
++                if (floating + fields.Length <= FloatRegisters.Length)
++                {
++                    args.Add(new Register(null, FloatRegisters[floating]));
++                    floating += fields.Length;
++                    return;
++                }
++                floating = FloatRegisters.Length;
++                args.Add(new StackOffset(stack));
++                stack += checked((int)(((TypeSizes.UnboxedSize(par!.ParameterType, PtrSize) + PtrSize - 1) / PtrSize) * PtrSize));
++                return;
++            }
+             if (par != null && IsFloatingPoint(par))
+             {
+                 if (floating < FloatRegisters.Length)
+--- a/Cpp2IL.Core/OutputFormats/AsmResolverDllOutputFormatIlRecovery.cs
++++ b/Cpp2IL.Core/OutputFormats/AsmResolverDllOutputFormatIlRecovery.cs
+@@ -18,6 +18,8 @@
+ 
+ public class AsmResolverDllOutputFormatIlRecovery : AsmResolverDllOutputFormat
+ {
++    private static readonly object methodMapLock = new();
++
+     public override string OutputFormatId => "dll_il_recovery";
+ 
+     public override string OutputFormatName => "DLL files with IL Recovery";
+@@ -43,6 +45,17 @@
+                          moduleName.StartsWith("System.") || moduleName == "System" ||
+                          moduleName.StartsWith("mscorlib");
+ 
++        var selectedAssemblies = Environment.GetEnvironmentVariable("TOOLKIT_RECOVERY_ASSEMBLIES");
++        if (string.IsNullOrEmpty(selectedAssemblies) == false && selectedAssemblies.Split(',').Contains(moduleName.Replace(".dll", "")) == false)
++        {
++            shouldSkip = true;
++        }
++        var selectedTypes = Environment.GetEnvironmentVariable("TOOLKIT_RECOVERY_TYPES");
++        if (string.IsNullOrEmpty(selectedTypes) == false && selectedTypes.Split(',').Contains(methodContext.DeclaringType?.FullName) == false)
++        {
++            shouldSkip = true;
++        }
++
+         if (!methodDefinition.IsManagedMethodWithBody())
+             return;
+ 
+@@ -60,6 +73,26 @@
+             Interlocked.Increment(ref TotalMethodCount);
+ 
+             methodContext.Analyze();
++            Cpp2IL.Core.Analysis.Arm64Recovery.FoldAggregateCopies(methodContext);
++            Cpp2IL.Core.Analysis.Arm64Recovery.RecoverNativeDetails(methodContext);
++            if (methodContext.ControlFlowGraph != null)
++            {
++                Cpp2IL.Core.Analysis.DeadCodeEliminator.Run(methodContext);
++            }
++            var mapPath = Environment.GetEnvironmentVariable("RECOVERY_METHOD_MAP_PATH");
++            if (string.IsNullOrEmpty(mapPath) == false && methodContext.DeclaringType?.FullName.StartsWith("Cpp2ILInjected.") == false)
++            {
++                lock (methodMapLock)
++                {
++                    File.AppendAllText(mapPath, methodContext.FullName + "\t" + methodContext.UnderlyingPointer.ToString("X") + "\t" + methodContext.RawBytes.Length.ToString() + Environment.NewLine);
++                }
++            }
++            var dumpMethod = Environment.GetEnvironmentVariable("TOOLKIT_RECOVERY_DUMP_METHOD");
++            var dumpPath = Environment.GetEnvironmentVariable("TOOLKIT_RECOVERY_DUMP_PATH");
++            if (string.IsNullOrEmpty(dumpMethod) == false && string.IsNullOrEmpty(dumpPath) == false && methodContext.FullName.Contains(dumpMethod))
++            {
++                File.WriteAllLines(dumpPath, methodContext.ControlFlowGraph!.Instructions.Select(instruction => instruction.ToString()));
++            }
+ 
+             if (methodContext.ConvertedIsil.Count == 0)
+                 FillMethodBodyWithStub(methodDefinition);
+--- a/Cpp2IL.Core/IlGenerator.cs
++++ b/Cpp2IL.Core/IlGenerator.cs
+@@ -614,6 +614,25 @@
+ 
+     private static CilOpCode? FloatArithmeticConversion(Instruction instruction)
+     {
++        if (instruction.OpCode is OpCode.CheckEqual or OpCode.CheckNotEqual or OpCode.CheckLess or OpCode.CheckGreater or OpCode.CheckLessOrEqual or OpCode.CheckGreaterOrEqual)
++        {
++            var single = false;
++            for (var index = 1; index < instruction.Operands.Count; index++)
++            {
++                var typeName = instruction.Operands[index] switch
++                {
++                    FloatLiteral => "System.Single",
++                    DoubleLiteral => "System.Double",
++                    var operand => DestinationType(operand)?.FullName
++                };
++                if (typeName == "System.Double")
++                {
++                    return CilOpCodes.Conv_R8;
++                }
++                single |= typeName == "System.Single";
++            }
++            return single ? CilOpCodes.Conv_R4 : null;
++        }
+         if (instruction.OpCode is not (OpCode.Add or OpCode.Subtract or OpCode.Multiply or OpCode.Divide or OpCode.Modulo))
+             return null;
+ 
+@@ -828,7 +847,7 @@
+     }
+ 
+     private static bool IsBoolean(IOperand operand, MethodAnalysisContext context) =>
+-        operand is LocalVariable { Type: { } type } && type == context.AppContext.SystemTypes.SystemBooleanType;
++        DestinationType(operand)?.FullName == "System.Boolean";
+ 
+     private static bool IsZeroConstant(IOperand operand) => operand is Immediate { Value: 0 };
+     
+--- a/Cpp2IL.Core/InstructionSets/NewArmV8InstructionSet.cs
++++ b/Cpp2IL.Core/InstructionSets/NewArmV8InstructionSet.cs
+@@ -300,7 +300,7 @@
+             var temp4 = new Register(null, "TEMP4");
+ 
+             Add(address, OpCode.CheckLess, flagC, op0, op1); // arm's C is the inverse of a borrow
+-            Add(address, OpCode.Not, flagC, flagC);
++            Add(address, OpCode.CheckEqual, flagC, flagC, Imm(0));
+             Add(address, OpCode.Subtract, temp1, op0, op1);
+             Add(address, OpCode.CheckLess, flagN, temp1, Imm(0));
+             Add(address, OpCode.CheckEqual, flagZ, temp1, Imm(0));
+@@ -310,6 +310,18 @@
+             Add(address, OpCode.CheckLess, flagV, temp4, Imm(0));
+         }
+ 
++        void EmitFloatCompareFlags(IOperand left, IOperand right)
++        {
++            var unorderedLeft = new Register(null, "TEMPFPUNORDERED1");
++            var unorderedRight = new Register(null, "TEMPFPUNORDERED2");
++            Add(address, OpCode.CheckLess, flagN, left, right);
++            Add(address, OpCode.CheckEqual, flagZ, left, right);
++            Add(address, OpCode.CheckEqual, flagC, flagN, Imm(0));
++            Add(address, OpCode.CheckNotEqual, unorderedLeft, left, left);
++            Add(address, OpCode.CheckNotEqual, unorderedRight, right, right);
++            Add(address, OpCode.Or, flagV, unorderedLeft, unorderedRight);
++        }
++
+         void EmitResultFlags(IOperand result)
+         {
+             Add(address, OpCode.CheckLess, flagN, result, Imm(0));
+@@ -329,47 +341,47 @@
+                 case Arm64ConditionCode.EQ:
+                     return flagZ;
+                 case Arm64ConditionCode.NE:
+-                    Add(address, OpCode.Not, temp, flagZ);
++                    Add(address, OpCode.CheckEqual, temp, flagZ, Imm(0));
+                     return temp;
+                 case Arm64ConditionCode.GE:
+                     Add(address, OpCode.CheckEqual, temp, flagN, flagV);
+                     return temp;
+                 case Arm64ConditionCode.LT:
+                     Add(address, OpCode.CheckEqual, temp, flagN, flagV);
+-                    Add(address, OpCode.Not, temp, temp);
++                    Add(address, OpCode.CheckEqual, temp, temp, Imm(0));
+                     return temp;
+                 case Arm64ConditionCode.GT:
+                     Add(address, OpCode.CheckEqual, temp, flagN, flagV);
+-                    Add(address, OpCode.Not, temp2, flagZ);
++                    Add(address, OpCode.CheckEqual, temp2, flagZ, Imm(0));
+                     Add(address, OpCode.And, temp, temp, temp2);
+                     return temp;
+                 case Arm64ConditionCode.LE:
+                     Add(address, OpCode.CheckEqual, temp, flagN, flagV);
+-                    Add(address, OpCode.Not, temp, temp);
++                    Add(address, OpCode.CheckEqual, temp, temp, Imm(0));
+                     Add(address, OpCode.Or, temp, temp, flagZ);
+                     return temp;
+                 case Arm64ConditionCode.CS: // unsigned >=
+                     return flagC;
+                 case Arm64ConditionCode.CC: // unsigned <
+-                    Add(address, OpCode.Not, temp, flagC);
++                    Add(address, OpCode.CheckEqual, temp, flagC, Imm(0));
+                     return temp;
+                 case Arm64ConditionCode.HI: // unsigned >
+-                    Add(address, OpCode.Not, temp, flagZ);
++                    Add(address, OpCode.CheckEqual, temp, flagZ, Imm(0));
+                     Add(address, OpCode.And, temp, flagC, temp);
+                     return temp;
+                 case Arm64ConditionCode.LS: // unsigned <=
+-                    Add(address, OpCode.Not, temp, flagC);
++                    Add(address, OpCode.CheckEqual, temp, flagC, Imm(0));
+                     Add(address, OpCode.Or, temp, temp, flagZ);
+                     return temp;
+                 case Arm64ConditionCode.MI:
+                     return flagN;
+                 case Arm64ConditionCode.PL:
+-                    Add(address, OpCode.Not, temp, flagN);
++                    Add(address, OpCode.CheckEqual, temp, flagN, Imm(0));
+                     return temp;
+                 case Arm64ConditionCode.VS:
+                     return flagV;
+                 case Arm64ConditionCode.VC:
+-                    Add(address, OpCode.Not, temp, flagV);
++                    Add(address, OpCode.CheckEqual, temp, flagV, Imm(0));
+                     return temp;
+                 default: // AL/NV are both unconditional
+                     return Imm(1);
+@@ -380,7 +392,7 @@
+         void EmitConditionalAssign(Arm64ConditionCode condition, Action emitTrueValue, Action<ulong> emitFalseValue)
+         {
+             var inverse = new Register(null, "TEMPCSEL");
+-            Add(address, OpCode.Not, inverse, EmitCondition(condition));
++            Add(address, OpCode.CheckEqual, inverse, EmitCondition(condition), Imm(0));
+             Add(address, OpCode.ConditionalJump, Imm(address + 1), inverse);
+             emitTrueValue();
+             Add(address, OpCode.Jump, Imm(address + 2));
+@@ -560,9 +572,11 @@
+                     break;
+                 }
+             case Arm64Mnemonic.CMP:
++                EmitCompareFlags(ConvertOperand(instruction, 0), ConvertOperand(instruction, 1));
++                break;
+             case Arm64Mnemonic.FCMP:
+             case Arm64Mnemonic.FCMPE:
+-                EmitCompareFlags(ConvertOperand(instruction, 0), ConvertOperand(instruction, 1));
++                EmitFloatCompareFlags(ConvertOperand(instruction, 0), ConvertOperand(instruction, 1));
+                 break;
+             case Arm64Mnemonic.CMN:
+                 // cmp against the negated operand
+@@ -633,7 +647,7 @@
+                 {
+                     // if cond holds the flags come from the comparison, else straight from the nzcv immediate
+                     var inverse = new Register(null, "TEMPCSEL");
+-                    Add(address, OpCode.Not, inverse, EmitCondition(instruction.FinalOpConditionCode));
++                    Add(address, OpCode.CheckEqual, inverse, EmitCondition(instruction.FinalOpConditionCode), Imm(0));
+                     Add(address, OpCode.ConditionalJump, Imm(address + 1), inverse);
+ 
+                     var op1 = ConvertOperand(instruction, 1);
+@@ -644,7 +658,14 @@
+                         op1 = negated;
+                     }
+ 
+-                    EmitCompareFlags(ConvertOperand(instruction, 0), op1);
++                    if (instruction.Mnemonic is Arm64Mnemonic.FCCMP or Arm64Mnemonic.FCCMPE)
++                    {
++                        EmitFloatCompareFlags(ConvertOperand(instruction, 0), op1);
++                    }
++                    else
++                    {
++                        EmitCompareFlags(ConvertOperand(instruction, 0), op1);
++                    }
+                     Add(address, OpCode.Jump, Imm(address + 2));
+ 
+                     var nzcv = instruction.Op2Imm;
+@@ -803,7 +824,7 @@
+                     Add(address, OpCode.CheckEqual, temp, ConvertOperand(instruction, 0), Imm(0));
+ 
+                     if (instruction.Mnemonic == Arm64Mnemonic.CBNZ)
+-                        Add(address, OpCode.Not, temp, temp);
++                        Add(address, OpCode.CheckEqual, temp, temp, Imm(0));
+ 
+                     Add(address, OpCode.ConditionalJump, Imm(target), temp);
+                     break;
