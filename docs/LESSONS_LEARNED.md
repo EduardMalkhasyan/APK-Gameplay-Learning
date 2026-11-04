@@ -13,6 +13,7 @@ Inspect container, splits, runtime version, architecture and feature flags befor
 - A single APK is often incomplete. Ask for the XAPK/APKS with the `config.arm64_v8a` split and the asset packs or OBB; Unity data and native code frequently live in splits.
 - Some games ship only an ARM32 or only an ARM64 native split. Note which one you have before choosing tools.
 - Treat packages as hostile archives: refuse entries that would land outside the target folder, cap the bytes actually written (a few GB), and stop on a time budget.
+- Watch memory on Unity exports. UnityPy caches a decoded atlas on each file that asks for it, so a game split into hundreds of small files that share atlases can hold one 2048x2048 copy per file, over 10 GB. Clear the cache when the export moves to the next file. On macOS check "peak memory footprint" in `/usr/bin/time -l`: compressed memory hides this from the resident size.
 
 ## Asset lessons
 

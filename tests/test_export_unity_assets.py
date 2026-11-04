@@ -95,6 +95,17 @@ class ExportTests(unittest.TestCase):
         self.assertEqual(report['failed'], {'Texture2D: FileNotFoundError': 1})
         self.assertTrue((out / 'Font' / 'Title_4.otf').exists())
 
+    def test_only_the_current_file_keeps_its_decoded_images(self):
+        first, second = File(), File()
+        first._cache, second._cache = {1: 'atlas'}, {1: 'atlas'}
+        a = Reader('Sprite', 1, item(m_Name='a', image=Image()))
+        b = Reader('Sprite', 2, item(m_Name='b', image=Image()))
+        a.assets_file, b.assets_file = first, second
+        out, report = self.run_export([a, b])
+        self.assertEqual(report['exported'], {'Sprite': 2})
+        self.assertEqual(first._cache, {})
+        self.assertEqual(second._cache, {1: 'atlas'})
+
     def test_output_inside_the_repository_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
             argv = ['export_unity_assets.py', directory, str(export_unity_assets.REPOSITORY / 'work' / 'assets')]

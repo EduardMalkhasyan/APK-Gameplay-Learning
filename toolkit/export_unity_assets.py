@@ -39,6 +39,12 @@ class Exporter:
         return time.monotonic() > self.deadline
 
 
+def clear_decoded_images(assets_file):
+    cache = getattr(assets_file, '_cache', None)
+    if isinstance(cache, dict):
+        cache.clear()
+
+
 def type_tree_generator(env, objects, unzipped):
     try:
         from UnityPy.helpers.TypeTreeGenerator import TypeTreeGenerator
@@ -94,10 +100,14 @@ def export(unzipped, out, max_meshes, budget):
     problem = type_tree_generator(env, objects, unzipped)
     values_note = problem
 
+    held_file = None
     for obj in objects:
         if exporter.over():
             notes.append('time budget of %d s reached: the rest was skipped' % budget)
             break
+        if obj.assets_file is not held_file:
+            clear_decoded_images(held_file)
+            held_file = obj.assets_file
         kind = obj.type.name
         try:
             if kind in ('Sprite', 'Texture2D'):
