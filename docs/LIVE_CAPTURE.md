@@ -4,7 +4,7 @@ A package holds defaults. A server can change them per player, so a short sessio
 
 ## What it gives, best value first
 
-1. **The config the game saved on the device.** After one launch, read the app's data folder as root. Publisher SDKs often keep the live config as plain JSON, even when the request and reply on the wire are compressed or encrypted. Diff it against the copy bundled in the package with `toolkit/live/diff_json.py`. One Hotel session showed 245 differences: other pacing, a 14-step floor ladder, a per-device floor base, a segment number and A/B experiment ids.
+1. **The config the game saved on the device.** After one launch, read the app's data folder as root. Publisher SDKs often keep the live config as plain JSON, even when the request and reply on the wire are compressed or encrypted. Diff it against the copy bundled in the package with `toolkit/live/diff_json.py`. One session showed 245 differences: other pacing, a 14-step floor ladder, a per-device floor base, a segment number and A/B experiment ids.
 2. **Local state.** Shared preferences and small JSON files hold the client's segment, offers already shown and impression history.
 3. **Traffic.** Which hosts, which MAX ad units and waterfalls, and when impressions fire.
 4. **Logs.** `adb logcat -b all` shows what the game and SDKs print.
