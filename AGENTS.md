@@ -10,7 +10,8 @@ Purpose: read how a game works from its compiled package (gameplay code, sprites
 - Use the matching route in docs/METHOD.md and docs/ENGINE_ROUTES.md. Documentation for a route does not mean that recovery is implemented or verified here.
 - Read data before code: ScriptableObjects, level files, text assets, localization tables and constant pools give exact numbers quickly.
 - For gameplay, skip ad, analytics and attribution SDKs and engine code, and scope app-owned namespaces/packages explicitly. For monetization, those SDKs and their config are the target: follow docs/MONETIZATION.md.
-- Never write API keys, SDK keys, tokens or ad unit ids into reports. Mask them. Do not contact a game's servers or defeat protection such as PairIP or encrypted metadata.
+- Never write API keys, SDK keys, tokens or ad unit ids into reports. Mask them. Do not contact a game's servers from analysis tools or defeat protection such as PairIP or encrypted metadata.
+- Run a game only when the user asks for a live run, and only on an isolated emulator as in docs/LIVE_CAPTURE.md: never click ads, never buy, never hook the app or extract keys.
 - Check the package name, version and date against the store listing before analysis: APK mirrors can serve another publisher's or an old build.
 - Treat tool support as version- and architecture-specific. Before declaring recovery impossible, check the tool's current primary documentation and try an applicable alternative within bounded work.
 - Never copy original game repository source to fill recovery gaps. Tool repositories may inform general decompiler fixes.

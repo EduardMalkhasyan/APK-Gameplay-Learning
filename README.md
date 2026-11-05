@@ -32,11 +32,13 @@ For AI agents: [AGENTS.md](AGENTS.md) (Claude reads it via [CLAUDE.md](CLAUDE.md
 | docs/ENGINE_ROUTES.md | Code-recovery routes per engine and tool references |
 | docs/WORKFLOW.md | Evidence rules for deep code work |
 | docs/MONETIZATION.md | The route for reading how a game earns money: ad stack, floors, pacing, segments, offers |
+| docs/LIVE_CAPTURE.md | Live run on an emulator: the config a game saved on the device, its traffic and logs |
 | docs/LESSONS_LEARNED.md | Pitfalls we hit and how to avoid them |
 | templates/ | Blank mechanic record, monetization report, analyst brief, run context, comparison page with sample data, and run quality file |
 | examples/ | Synthetic filled example (made-up game) |
 | toolkit/run_monetization.py | One command for the monetization route: packages in, evidence folders and `EVIDENCE.md` out |
 | toolkit/build_monetization_page.py | Competitor comparison page: filled data files in, one HTML file with a language switch out |
+| toolkit/live/ | Live capture helpers: certificate injection, traffic summary, pcap host list, JSON diff |
 | .claude/skills/monetization-teardown | Claude Code skill: the whole monetization route, step by step |
 | .claude/workflows/monetization-teardown.js | Saved multi-agent workflow: analyst and reviewer per game, then a summary |
 | toolkit/inspect_package.py | Read-only package inventory: hashes, ABIs, engine signals |

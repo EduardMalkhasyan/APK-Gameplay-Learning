@@ -92,4 +92,4 @@ Give one data file per language and the page shows a language switch; keep the n
 
 ## 6. Limits
 
-Static reading shows capability and defaults. It cannot show live floors, real prices per country, the server's segment assignment or actual ad frequency. A device session settles those. Do not contact a game's servers from analysis tools. Do not defeat protection such as PairIP or encrypted metadata: note the limit and use the other evidence.
+Static reading shows capability and defaults. It cannot show live floors, real prices per country, the server's segment assignment or actual ad frequency. A live run settles much of that: see [LIVE_CAPTURE.md](LIVE_CAPTURE.md). Start with the config the game saved on the device. Do not contact a game's servers from analysis tools. Do not defeat protection such as PairIP or encrypted metadata: note the limit and use the other evidence.

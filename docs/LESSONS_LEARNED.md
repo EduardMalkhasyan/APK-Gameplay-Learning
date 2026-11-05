@@ -60,6 +60,14 @@ Use compiler checks for syntax/contracts, mocks for explicit modeled cases, and 
 - A non-ASCII field name or `[SerializeReference]` data can break the standard value export of one object, often the config you came for. Confirm the money configs really exported. If one did not, decode its bytes by hand against the class layout and check that every byte is consumed.
 - Check which game a team's measured result came from before quoting it next to another game.
 
+## Live run lessons
+
+- Read the app's data folder before the traffic. A publisher SDK can keep its live config as plain JSON on the device, even when the wire is compressed or encrypted. Diffing it against the bundled copy showed per-device floors, segments and experiment ids that no build holds.
+- A server can key a player by device id or advertising id, so clearing app data does not make a new player. Wipe the emulator for that.
+- Test mode changes what you see: MAX serves test creatives on emulators, and a floor logic that follows observed prices then climbs on fake fills. Label such numbers as test-mode.
+- A game played by blind random swipes stays in its tutorial. Read the screen, act, then read it again.
+- SDKs batch events. Killing the app seconds after an impression loses it, and the server never learns of it.
+
 ## Reading lessons
 
 - Read data before code: level files, ScriptableObjects, localization tables and constant pools give exact numbers faster than method bodies.
