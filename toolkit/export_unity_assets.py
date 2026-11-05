@@ -13,6 +13,7 @@ import time
 
 REPOSITORY = Path(__file__).resolve().parent.parent
 SAFE_NAME = re.compile(r'[^\w.-]')
+PRINTABLE = re.compile(rb'[\x20-\x7e\xc0-\xf4][\x20-\x7e\x80-\xbf\xc0-\xf4]{3,}')
 
 
 def safe_name(name, fallback):
@@ -45,7 +46,38 @@ def clear_decoded_images(assets_file):
         cache.clear()
 
 
-def type_tree_generator(env, objects, unzipped):
+def detect_unity_version(unzipped):
+    data = unzipped / 'assets/bin/Data'
+    for name in ('data.unity3d', 'globalgamemanagers'):
+        path = data / name
+        if path.is_file():
+            with path.open('rb') as stream:
+                match = re.search(rb'(?:20\d{2}|6000)\.\d+\.\d+[abfp]\d+', stream.read(8192))
+            if match:
+                return match.group().decode('ascii')
+    return None
+
+
+def script_name(obj):
+    try:
+        script = obj.parse_monobehaviour_head().m_Script.deref_parse_as_object()
+        return '.'.join(part for part in (script.m_Namespace, script.m_ClassName) if part)
+    except Exception:
+        return ''
+
+
+def save_raw_strings(exporter, obj):
+    """Fallback when a script's values cannot be decoded: its printable strings, without numbers."""
+    head = obj.parse_monobehaviour_head()
+    name = getattr(head, 'm_Name', '') or ''
+    found = [item.decode('utf-8', 'replace') for item in PRINTABLE.findall(obj.get_raw_data()[28:])]
+    if found:
+        text = json.dumps({'_script': script_name(obj), 'm_Name': name, 'strings': found}, indent=1, ensure_ascii=False)
+        exporter.save('MonoBehaviourStrings', name or script_name(obj), obj.path_id, '.json', text.encode('utf-8', 'surrogateescape'))
+    return True
+
+
+def type_tree_generator(env, objects, unzipped, dll_folder=None):
     try:
         from UnityPy.helpers.TypeTreeGenerator import TypeTreeGenerator
     except ImportError:
@@ -54,14 +86,18 @@ def type_tree_generator(env, objects, unzipped):
     if version is None:
         return 'Unity version not found'
     managed = unzipped / 'assets/bin/Data/Managed'
-    il2cpp = sorted(unzipped.glob('lib/arm64-v8a/libil2cpp.so')) + sorted(unzipped.glob('lib/*/libil2cpp.so'))
+    il2cpp = sorted(unzipped.glob('lib/arm64-v8a/libil2cpp.so'))
     metadata = managed / 'Metadata/global-metadata.dat'
     generator = TypeTreeGenerator(version)
     try:
-        if il2cpp and metadata.exists():
+        if dll_folder:
+            generator.load_local_dll_folder(str(dll_folder))
+        elif il2cpp and metadata.exists():
             generator.load_il2cpp(il2cpp[0].read_bytes(), metadata.read_bytes())
         elif any(managed.glob('*.dll')):
             generator.load_local_dll_folder(str(managed))
+        elif any(unzipped.glob('lib/*/libil2cpp.so')):
+            return 'only a 32-bit IL2CPP binary: loading it can run for hours, so script values were not generated'
         else:
             return 'no Managed DLLs or IL2CPP binary + metadata'
     except Exception as error:
@@ -70,11 +106,14 @@ def type_tree_generator(env, objects, unzipped):
     return None
 
 
-def export(unzipped, out, max_meshes, budget):
+def export(unzipped, out, max_meshes, budget, only=None, dll_folder=None, raw_strings=False):
     import UnityPy
     data = unzipped / 'assets'
     if data.is_dir() == False:
         raise RuntimeError('%s has no assets/ folder: unzip every split (and the OBB) into it first' % unzipped)
+    version = detect_unity_version(unzipped)
+    if version:
+        UnityPy.config.FALLBACK_UNITY_VERSION = version
     env = UnityPy.load(str(data))
     objects = env.objects
     if len(objects) == 0:
@@ -85,6 +124,8 @@ def export(unzipped, out, max_meshes, budget):
 
     uses = collections.Counter()
     for obj in objects:
+        if only and 'Mesh' not in only:
+            break
         if obj.type.name in ('MeshFilter', 'SkinnedMeshRenderer'):
             try:
                 mesh = obj.read().m_Mesh.deref()
@@ -97,7 +138,7 @@ def export(unzipped, out, max_meshes, budget):
     if len(uses) > max_meshes:
         notes.append('exported the %d most used of %d meshes' % (max_meshes, len(uses)))
 
-    problem = type_tree_generator(env, objects, unzipped)
+    problem = type_tree_generator(env, objects, unzipped, dll_folder)
     values_note = problem
 
     held_file = None
@@ -109,6 +150,8 @@ def export(unzipped, out, max_meshes, budget):
             clear_decoded_images(held_file)
             held_file = obj.assets_file
         kind = obj.type.name
+        if only and kind not in only:
+            continue
         try:
             if kind in ('Sprite', 'Texture2D'):
                 item = obj.read()
@@ -133,10 +176,18 @@ def export(unzipped, out, max_meshes, budget):
                 if raw:
                     exporter.save(kind, item.m_Name, obj.path_id, '.otf' if raw[:4] == b'OTTO' else '.ttf', raw)
             elif kind == 'MonoBehaviour':
-                tree = obj.read_typetree()
+                try:
+                    tree = obj.read_typetree()
+                except Exception:
+                    if raw_strings and save_raw_strings(exporter, obj):
+                        continue
+                    raise
                 name = tree.get('m_Name') if isinstance(tree, dict) else None
+                script = script_name(obj)
+                if isinstance(tree, dict):
+                    tree = {'_script': script, **tree}
                 text = json.dumps(tree, indent=1, ensure_ascii=False, default=str)
-                exporter.save(kind, name, obj.path_id, '.json', text.encode('utf-8', 'surrogateescape'))
+                exporter.save(kind, name or script, obj.path_id, '.json', text.encode('utf-8', 'surrogateescape'))
         except Exception as error:
             exporter.failed[kind + ': ' + type(error).__name__] += 1
     if values_note and exporter.failed.get('MonoBehaviour: ValueError'):
@@ -150,6 +201,9 @@ def main():
     parser.add_argument('output', type=Path, help='new folder outside this repository')
     parser.add_argument('--max-meshes', type=int, default=300)
     parser.add_argument('--budget', type=int, default=900, help='seconds before the export stops')
+    parser.add_argument('--only', help='comma-separated object types, e.g. TextAsset,MonoBehaviour for data without art')
+    parser.add_argument('--raw-strings', action='store_true', help='when script values cannot be decoded, save their printable strings instead')
+    parser.add_argument('--dll-folder', type=Path, help='assemblies for reading script values: Mono DLLs, or Cpp2IL dummy DLLs built with attributeanalyzer,attributeinjector')
     args = parser.parse_args()
     out = args.output.expanduser().resolve()
     if out == REPOSITORY or REPOSITORY in out.parents:
@@ -157,7 +211,7 @@ def main():
     if out.exists() and any(out.iterdir()):
         parser.exit(2, 'Asset export failed: %s is not empty\n' % out)
     try:
-        report = export(args.unzipped.expanduser().resolve(strict=True), out, args.max_meshes, args.budget)
+        report = export(args.unzipped.expanduser().resolve(strict=True), out, args.max_meshes, args.budget, set(args.only.split(',')) if args.only else None, args.dll_folder, args.raw_strings)
     except ImportError:
         parser.exit(2, 'Asset export failed: UnityPy is not installed (see docs/METHOD.md)\n')
     except (OSError, RuntimeError) as error:

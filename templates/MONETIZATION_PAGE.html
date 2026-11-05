@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monetization comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Unbounded:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* One visual world: a broadcast match report. Teal is always us, amber is always the rivals. */
+:root {
+  --bg: #080d15;
+  --bg-2: #0d1420;
+  --panel: #111a28;
+  --panel-2: #172233;
+  --line: rgba(160, 190, 220, .14);
+  --line-2: rgba(160, 190, 220, .26);
+  --ink: #eef3f8;
+  --soft: #b3c0cf;
+  --dim: #7f8ea0;
+  --us: #2fdcc6;
+  --us-deep: rgba(47, 220, 198, .13);
+  --them: #ffb547;
+  --them-deep: rgba(255, 181, 71, .13);
+  --bad: #ff6f61;
+  --bad-deep: rgba(255, 111, 97, .15);
+  --mid: #f2d04f;
+  --mid-deep: rgba(242, 208, 79, .14);
+  --good: #5fe39b;
+  --good-deep: rgba(95, 227, 155, .14);
+  --font-display: "Unbounded", "Golos Text", system-ui, sans-serif;
+  --font-body: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background:
+    radial-gradient(900px 420px at 12% -8%, rgba(47, 220, 198, .13), transparent 70%),
+    radial-gradient(900px 420px at 88% -8%, rgba(255, 181, 71, .12), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--ink);
+  font: 400 15.5px/1.5 var(--font-body);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4, p { margin: 0; }
+h1, h2 { font-family: var(--font-display); text-wrap: balance; }
+code { font-size: .86em; background: rgba(160, 190, 220, .12); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--us); outline-offset: 2px; border-radius: 6px; }
+
+.topbar { position: sticky; top: 0; z-index: 20; background: rgba(8, 13, 21, .82); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+.topbar-in { max-width: 1400px; margin: 0 auto; padding: 10px 24px; display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.brand { font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: .01em; white-space: nowrap; }
+.brand em { font-style: normal; color: var(--us); }
+.brand b { font-weight: 600; color: var(--them); }
+.top-right { display: flex; gap: 10px; align-items: center; min-width: 0; max-width: 100%; }
+.lang { display: flex; gap: 2px; flex: none; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.lang[hidden] { display: none; }
+.lang button { padding: 8px 10px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--soft); transition: background .16s, color .16s; }
+.lang button:hover { color: var(--ink); }
+.lang button[aria-pressed="true"] { background: var(--us); color: var(--bg); }
+.tabs { min-width: 0; max-width: 100%; display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 4px; overflow-x: auto; }
+.tab { padding: 8px 14px; border-radius: 9px; color: var(--soft); font-weight: 500; font-size: 14px; white-space: nowrap; transition: background .16s, color .16s; }
+.tab:hover { color: var(--ink); background: rgba(160, 190, 220, .08); }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); font-weight: 600; }
+
+main { max-width: 1400px; margin: 0 auto; padding: 26px 24px 70px; }
+.view { display: none; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+.view.on { display: grid; animation: rise .22s ease-out; }
+@keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+.panel { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--line); border-radius: 16px; padding: 22px; box-shadow: 0 18px 50px rgba(0, 0, 0, .28); min-width: 0; }
+.panel h2 { font-size: 19px; line-height: 1.25; font-weight: 600; }
+.sub { color: var(--soft); max-width: 72ch; }
+.fine { color: var(--dim); font-size: 13px; line-height: 1.45; }
+
+/* Versus header */
+.versus { display: grid; grid-template-columns: 1fr minmax(260px, 340px) 1fr; gap: 18px; align-items: stretch; }
+.side-card { border-radius: 16px; padding: 22px; border: 1px solid var(--line); display: grid; gap: 14px; align-content: start; }
+.side-card.us { background: linear-gradient(135deg, var(--us-deep), transparent 75%), var(--panel); }
+.side-card.them { background: linear-gradient(225deg, var(--them-deep), transparent 75%), var(--panel); }
+.side-label { font-family: var(--font-display); font-size: 13px; font-weight: 600; }
+.us .side-label { color: var(--us); }
+.them .side-label { color: var(--them); }
+.team-row { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.team-row img, .icon { width: 44px; height: 44px; border-radius: 11px; flex: none; display: block; box-shadow: 0 4px 14px rgba(0, 0, 0, .4); }
+.team-row b { display: block; font-weight: 600; line-height: 1.25; }
+.team-row small { color: var(--dim); font-size: 12.5px; }
+.teams { display: grid; gap: 10px; }
+.core { background: var(--panel); border: 1px solid var(--line-2); border-radius: 16px; padding: 22px 18px; display: grid; justify-items: center; gap: 10px; text-align: center; align-content: center; }
+.ring { position: relative; width: 150px; height: 150px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-num { position: absolute; inset: 0; display: grid; place-content: center; font: 700 36px/1 var(--font-display); }
+.core p { font-size: 14px; color: var(--soft); max-width: 30ch; }
+
+h1.title { font-size: clamp(26px, 3.6vw, 44px); font-weight: 600; line-height: 1.12; }
+.intro { display: grid; gap: 10px; }
+.intro .sub { font-size: 17px; }
+.honest { border-left: 3px solid var(--line-2); padding: 2px 0 2px 12px; color: var(--dim); font-size: 13.5px; max-width: 86ch; }
+
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 22px; }
+.three { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(290px, 100%), 1fr)); gap: 18px; }
+.stack { display: grid; gap: 14px; align-content: start; }
+
+/* Timeline with a scrubber */
+.tl-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.play { display: inline-flex; align-items: center; gap: 8px; background: var(--ink); color: var(--bg); font-weight: 600; font-size: 14px; border-radius: 10px; padding: 9px 14px; transition: transform .12s; }
+.play:hover { transform: translateY(-1px); }
+.scrub { display: grid; grid-template-columns: 196px 1fr 64px; gap: 12px; align-items: center; margin-top: 14px; }
+.scrub output { font: 600 15px var(--font-display); text-align: right; white-space: nowrap; }
+input[type="range"] { width: 100%; appearance: none; -webkit-appearance: none; height: 6px; border-radius: 3px; background: var(--line-2); cursor: pointer; margin: 0; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--ink); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--ink); }
+input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--ink); border: 3px solid var(--bg); }
+.tl-row { display: grid; grid-template-columns: 196px 1fr 64px; gap: 12px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); }
+.tl-name { display: flex; gap: 9px; align-items: center; font-size: 14px; min-width: 0; line-height: 1.2; }
+.tl-name img { width: 26px; height: 26px; border-radius: 7px; flex: none; }
+.tl-track { position: relative; height: 22px; }
+.tl-track::before { content: ""; position: absolute; left: 0; right: 0; top: 10px; height: 2px; background: var(--line); border-radius: 1px; }
+.tl-track i { position: absolute; top: 6px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; opacity: .16; transition: opacity .1s; }
+.tl-track i.lit { opacity: 1; }
+.tl-count { font: 700 21px var(--font-display); text-align: right; }
+
+/* Matrix */
+.board-layout { display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 20px; align-items: start; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+.group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line-2); font-size: 13.5px; color: var(--soft); font-weight: 500; transition: background .14s, color .14s, border-color .14s; }
+.chip:hover { color: var(--ink); border-color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--soft); align-items: center; }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.matrix-wrap { overflow-x: auto; margin: 0 -22px -22px; padding: 0 0 8px; }
+table.matrix { border-collapse: collapse; width: 100%; min-width: 760px; }
+.matrix th { font-weight: 500; padding: 8px 4px; vertical-align: bottom; }
+.matrix th img { width: 34px; height: 34px; border-radius: 9px; display: block; margin: 0 auto 5px; }
+.matrix th small { display: block; font-size: 11px; color: var(--soft); line-height: 1.15; }
+.matrix .group-head th { font: 600 11px var(--font-display); padding: 4px; }
+.group-head .rivals { color: var(--them); border-bottom: 2px solid var(--them); }
+.group-head .ours { color: var(--us); border-bottom: 2px solid var(--us); }
+.matrix td { border-top: 1px solid var(--line); padding: 10px 4px; text-align: center; }
+.matrix td.name { text-align: left; padding-left: 22px; min-width: 300px; }
+.row-btn { display: grid; grid-template-columns: 26px 1fr; gap: 6px; text-align: left; width: 100%; align-items: baseline; }
+.row-num { font: 600 13px var(--font-display); color: var(--dim); }
+.row-title { font-weight: 600; font-size: 14.5px; line-height: 1.3; }
+.row-goal { display: block; color: var(--us); font-size: 12px; font-weight: 500; margin-top: 2px; }
+.matrix tbody tr { cursor: pointer; transition: background .12s; }
+.matrix tbody tr:hover { background: rgba(160, 190, 220, .06); }
+.matrix tbody tr.sel { background: rgba(160, 190, 220, .11); box-shadow: inset 3px 0 0 var(--ink); }
+.sep { border-left: 2px solid var(--line-2); }
+.mark { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: 13px; font-weight: 700; }
+.mark.has { background: var(--them); box-shadow: 0 0 10px rgba(255, 181, 71, .4); }
+.mark.none { width: 6px; height: 6px; background: var(--line-2); }
+.mark.gap { background: var(--bad-deep); border: 2px solid var(--bad); color: var(--bad); }
+.mark.part { background: var(--mid-deep); border: 2px solid var(--mid); color: var(--mid); }
+.mark.ok { background: var(--good-deep); border: 2px solid var(--good); color: var(--good); }
+.dimmed { opacity: .32; }
+
+/* Detail */
+.detail { position: sticky; top: 76px; max-height: calc(100vh - 96px); overflow-y: auto; display: grid; gap: 14px; }
+.detail h3 { font: 600 18px/1.3 var(--font-display); text-wrap: balance; }
+.who-icons { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.who-icons img { width: 26px; height: 26px; border-radius: 7px; }
+.vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.vs div { border-radius: 12px; padding: 12px; font: 600 15px/1.25 var(--font-display); text-align: center; }
+.vs .t { background: var(--them-deep); color: var(--them); }
+.vs .u { background: var(--us-deep); color: var(--us); }
+.vs span { font: 700 11px var(--font-display); color: var(--dim); }
+.block { display: grid; gap: 5px; font-size: 14.5px; line-height: 1.45; color: var(--soft); }
+.block h4 { font-size: 12px; font-weight: 700; color: var(--dim); display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.block.t h4 { color: var(--them); }
+.block.o { background: rgba(47, 220, 198, .05); border-radius: 10px; padding: 10px 12px; }
+.block.o h4 { color: var(--us); }
+.state { font-size: 11px; font-weight: 700; border-radius: 5px; padding: 1px 7px; }
+.state.gap { background: var(--bad-deep); color: var(--bad); }
+.state.part { background: var(--mid-deep); color: var(--mid); }
+.state.ok { background: var(--good-deep); color: var(--good); }
+.try { border: 1px solid var(--line-2); border-radius: 12px; padding: 12px 14px; display: grid; gap: 5px; font-size: 14.5px; line-height: 1.45; background: rgba(238, 243, 248, .03); }
+.try h4 { font-size: 12px; font-weight: 700; color: var(--ink); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; font-weight: 600; border-radius: 6px; padding: 3px 8px; background: rgba(160, 190, 220, .12); color: var(--soft); }
+.tag.after { background: var(--bad-deep); color: var(--bad); }
+.tag.server { background: var(--mid-deep); color: var(--mid); }
+.tag.goal { background: var(--us-deep); color: var(--us); }
+tr.inline-detail td { padding: 0; text-align: left; cursor: default; }
+tr.inline-detail .detail { position: static; max-height: none; margin: 10px 14px 16px; }
+
+/* Bars and ladders */
+.bars { display: grid; gap: 9px; }
+.bar { display: grid; grid-template-columns: 26px 1fr; gap: 9px; align-items: center; }
+.bar img { width: 26px; height: 26px; border-radius: 7px; }
+.bar-fill { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13.5px; color: var(--soft); }
+.bar-fill i { display: block; height: 16px; border-radius: 4px; flex: none; }
+.ladders { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px; }
+.ladder { background: rgba(160, 190, 220, .04); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.ladder-head { display: flex; gap: 10px; align-items: center; }
+.ladder-head img { width: 32px; height: 32px; border-radius: 8px; }
+.ladder-head b { font-weight: 600; }
+.plot { position: relative; display: flex; align-items: flex-end; gap: 3px; height: 150px; overflow-x: auto; }
+.col-bar { display: grid; justify-items: center; gap: 3px; width: 25px; flex: none; font-size: 10.5px; color: var(--soft); }
+.col-bar i { display: block; width: 18px; border-radius: 3px 3px 0 0; }
+.plot-gap { width: 10px; flex: none; }
+.big { font: 700 34px/1.05 var(--font-display); }
+.split { display: flex; height: 12px; border-radius: 4px; overflow: hidden; gap: 2px; }
+.split span { display: block; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--soft); }
+.keys i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+ul.clean { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+ul.clean li { padding-left: 16px; position: relative; color: var(--soft); line-height: 1.45; }
+ul.clean li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--dim); }
+ul.clean b { color: var(--ink); }
+.top-move { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center; text-align: left; width: 100%; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--line); transition: border-color .14s, background .14s; }
+.top-move:hover { border-color: var(--ink); background: rgba(160, 190, 220, .06); }
+.top-move b { font-weight: 600; line-height: 1.3; }
+.top-move .row-num { font-size: 15px; }
+.top-move small { color: var(--dim); font-size: 13px; white-space: nowrap; }
+.rival-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rival-head img { width: 40px; height: 40px; border-radius: 10px; }
+dl { margin: 0; display: grid; grid-template-columns: 140px 1fr; gap: 8px 14px; font-size: 14.5px; }
+dt { font-weight: 600; }
+dd { margin: 0; color: var(--soft); }
+footer { max-width: 1400px; margin: 0 auto; padding: 0 24px 40px; color: var(--dim); font-size: 13px; }
+
+@media (max-width: 1180px) {
+  .board-layout { grid-template-columns: minmax(0, 1fr); }
+  #detail-side { display: none; }
+}
+@media (max-width: 820px) {
+  table.matrix { min-width: 0; }
+  .matrix td.name { min-width: 0; }
+}
+@media (max-width: 920px) {
+  .versus { grid-template-columns: 1fr; }
+  .core { order: -1; }
+}
+@media (max-width: 640px) {
+  main { padding: 16px 14px 50px; }
+  .topbar-in { padding: 8px 14px; }
+  .panel { padding: 16px; }
+  .matrix-wrap { margin: 0 -16px -16px; }
+  .matrix td, .matrix th { padding-left: 2px; padding-right: 2px; }
+  .matrix td.name { padding-left: 12px; }
+  .matrix th small { display: none; }
+  .matrix th img { width: 26px; height: 26px; margin-bottom: 0; }
+  .mark { width: 20px; height: 20px; font-size: 11px; }
+  .row-btn { grid-template-columns: 18px 1fr; }
+  .row-title { font-size: 13.5px; }
+  tr.inline-detail .detail { margin: 8px 8px 12px; padding: 14px; }
+  .scrub { grid-template-columns: 1fr auto; }
+  .tl-row { grid-template-columns: 1fr 52px; }
+  .tl-track, .scrub input { grid-column: 1 / -1; grid-row: 2; }
+  .ladders { grid-template-columns: 1fr; }
+  dl { grid-template-columns: 1fr; gap: 2px; }
+  dd { margin-bottom: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view.on { animation: none; }
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<!-- Filled by toolkit/build_monetization_page.py. Change the data files, not this page. -->
+<script id="page-data" type="application/json">"__PAGE_DATA__"</script>
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand" data-text="brand"></div>
+    <div class="top-right">
+      <nav class="tabs" role="tablist" id="tabs"></nav>
+      <div class="lang" id="lang" role="group" aria-label="Language"></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="view" id="view-overview">
+    <div class="intro">
+      <h1 class="title" data-text="title"></h1>
+      <p class="sub" id="answer"></p>
+    </div>
+    <div class="versus">
+      <div class="side-card us"><div class="side-label" data-text="sideUs"></div><div class="teams" id="our-teams"></div></div>
+      <div class="core">
+        <div class="ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,181,71,.22)" stroke-width="11"></circle>
+            <circle id="ring-value" cx="60" cy="60" r="52" fill="none" stroke="#2fdcc6" stroke-width="11" stroke-linecap="round"></circle>
+          </svg>
+          <div class="ring-num" id="ring-num"></div>
+        </div>
+        <p id="ring-caption"></p>
+      </div>
+      <div class="side-card them"><div class="side-label" data-text="sideThem"></div><div class="teams" id="their-teams"></div></div>
+    </div>
+    <div class="panel">
+      <div class="tl-head">
+        <h2 data-text="timelineTitle"></h2>
+        <button class="play" id="play" type="button"></button>
+      </div>
+      <div class="scrub">
+        <span class="fine" data-text="scrubLabel"></span>
+        <input type="range" id="minute" min="0" step="0.25" aria-label="Minute">
+        <output id="minute-out" for="minute"></output>
+      </div>
+      <div id="timeline"></div>
+      <p class="fine" style="margin-top:10px" data-text="timelineNote"></p>
+    </div>
+    <div class="two">
+      <div class="panel stack">
+        <h2 data-text="topMovesTitle"></h2>
+        <div class="stack" id="top-moves"></div>
+        <button class="chip" type="button" id="see-all" style="justify-self:start" data-text="seeAll"></button>
+      </div>
+      <div class="stack" style="gap:22px">
+        <div class="panel stack" id="focus"></div>
+        <div class="panel stack" id="goals"></div>
+      </div>
+    </div>
+    <p class="honest" data-text="honest"></p>
+  </section>
+
+  <section class="view" id="view-moves">
+    <div class="panel stack">
+      <h2 data-text="movesTitle"></h2>
+      <p class="sub" data-text="movesHelp"></p>
+      <div class="filters">
+        <div class="group" id="topic-filter"></div>
+        <div class="group" id="game-filter"></div>
+      </div>
+      <div class="legend">
+        <span><i class="mark has" style="width:14px;height:14px"></i> <span data-text="legendHas"></span></span>
+        <span><i class="mark gap" style="width:18px;height:18px;font-size:11px;font-style:normal">✕</i> <span data-text="legendGap"></span></span>
+        <span><i class="mark part" style="width:18px;height:18px;font-size:11px;font-style:normal">~</i> <span data-text="legendPart"></span></span>
+        <span><i class="mark ok" style="width:18px;height:18px;font-size:11px;font-style:normal">✓</i> <span data-text="legendOk"></span></span>
+      </div>
+    </div>
+    <div class="board-layout">
+      <div class="panel" style="padding-bottom:0">
+        <div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
+      </div>
+      <aside class="panel detail" id="detail-side" aria-live="polite"></aside>
+    </div>
+  </section>
+
+  <section class="view" id="view-numbers">
+    <div class="panel stack">
+      <div class="tl-head">
+        <h2 data-text="floorsTitle"></h2>
+        <div class="group" id="format-filter"></div>
+      </div>
+      <p class="sub" data-text="floorsHelp"></p>
+      <div class="ladders" id="ladders"></div>
+    </div>
+    <div class="three" id="charts"></div>
+  </section>
+
+  <section class="view" id="view-rivals">
+    <div class="three" id="publishers"></div>
+    <div class="panel stack">
+      <h2 data-text="notBehindTitle"></h2>
+      <ul class="clean" id="not-behind"></ul>
+    </div>
+  </section>
+
+  <section class="view" id="view-call">
+    <div class="two">
+      <div class="panel stack"><h2 data-text="sayItTitle"></h2><ul class="clean" id="say-it"></ul></div>
+      <div class="panel stack">
+        <h2 data-text="questionsTitle"></h2>
+        <p class="sub" data-text="questionsHelp"></p>
+        <div class="split" id="qbar" style="height:18px"></div>
+        <div class="keys" id="qlegend"></div>
+        <p class="fine" data-text="questionsNote"></p>
+      </div>
+    </div>
+    <div class="panel stack">
+      <h2 data-text="limitsTitle"></h2>
+      <p class="sub" data-text="limitsHelp"></p>
+      <ul class="clean" id="limits"></ul>
+    </div>
+    <div class="panel stack"><h2 data-text="wordsTitle"></h2><dl id="words"></dl></div>
+  </section>
+</main>
+<footer data-text="footer"></footer>
+
+<script>
+/* Everything shown comes from the data block, one page per language. Strings may hold simple HTML. */
+const BUNDLE = JSON.parse(document.getElementById('page-data').textContent);
+const LANGS = Object.keys(BUNDLE.pages);
+const VIEWS = ['overview', 'moves', 'numbers', 'rivals', 'call'];
+const COLOR = { us: 'var(--us)', them: 'var(--them)' };
+const MARKS = { gap: '✕', part: '~', ok: '✓' };
+const el = (id) => document.getElementById(id);
+const attr = (text) => String(text).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const state = { lang: LANGS[0], topic: 'all', game: 'all', format: '', selected: 0 };
+const wide = window.matchMedia('(min-width: 1181px)');
+let P, ui, rivals, ours, rows, playing = null;
+
+const gameOf = (id) => P.games.find((g) => g.id === id);
+const stateLabel = (value) => ({ gap: ui.stateGap, part: ui.statePart, ok: ui.stateOk })[value];
+function iconSrc(g) {
+  if (BUNDLE.icons[g.id]) return BUNDLE.icons[g.id];
+  const color = g.side === 'us' ? '#2fdcc6' : '#ffb547';
+  return 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 44"><rect width="44" height="44" fill="${color}"/><text x="22" y="30" font-family="sans-serif" font-size="22" font-weight="700" text-anchor="middle" fill="#080d15">${attr(g.short.slice(0, 1))}</text></svg>`);
+}
+const icon = (g) => `<img src="${iconSrc(g)}" alt="${attr(g.name)}" width="44" height="44">`;
+const listItems = (items) => items.map((item) => `<li>${item}</li>`).join('');
+
+/* Views */
+function currentView() {
+  const name = location.hash.slice(1);
+  return VIEWS.includes(name) ? name : 'overview';
+}
+function applyView() {
+  const name = currentView();
+  VIEWS.forEach((view) => {
+    el(`view-${view}`).classList.toggle('on', view === name);
+    el(`tab-${view}`).setAttribute('aria-selected', String(view === name));
+  });
+}
+
+/* Overview */
+function drawOverview() {
+  el('answer').innerHTML = P.answer;
+  el('ring-value').setAttribute('stroke-dasharray', `${(P.hero.percent / 100 * 326.7).toFixed(1)} 327`);
+  el('ring-num').textContent = P.hero.label;
+  el('ring-caption').innerHTML = P.hero.caption;
+  const teamRow = (g) => `<div class="team-row">${icon(g)}<div><b>${g.name}</b><small>${g.publisher}. ${g.stat}</small></div></div>`;
+  el('our-teams').innerHTML = ours.map(teamRow).join('');
+  el('their-teams').innerHTML = rivals.map(teamRow).join('');
+  el('focus').innerHTML = `<h2>${P.focus.title}</h2><div class="split" style="height:18px">${P.focus.split.map((part) => `<span style="flex:${part.share};background:var(--${part.tone})"></span>`).join('')}</div><div class="keys">${P.focus.split.map((part) => `<span><i style="background:var(--${part.tone})"></i>${part.label}</span>`).join('')}</div><p class="sub">${P.focus.text}</p>`;
+  el('goals').innerHTML = `<h2>${P.goals.title}</h2><ul class="clean">${listItems(P.goals.items)}</ul>`;
+  el('top-moves').innerHTML = P.cards.slice(0, 5).map((card, index) => `<button class="top-move" type="button" data-open="${index}"><span class="row-num">${index + 1}</span><b>${card.title}</b><small>${card.vs[0]}</small></button>`).join('');
+}
+function drawTimeline() {
+  const end = P.timeline.minutes * 60;
+  rows = P.timeline.rows.map((row) => {
+    const times = [];
+    let at = row.first, index = 0;
+    while (at <= end) {
+      times.push(at);
+      at += index < row.gaps.length ? row.gaps[index] : row.gap;
+      index += 1;
+    }
+    return { ...row, times, g: gameOf(row.game) };
+  });
+  el('timeline').innerHTML = rows.map((row, r) => {
+    const dots = row.times.map((t) => `<i data-t="${t}" style="left:${(t / end * 100).toFixed(2)}%;background:${COLOR[row.g.side]}"></i>`).join('');
+    return `<div class="tl-row"><div class="tl-name">${icon(row.g)}<span>${row.label}</span></div><div class="tl-track" id="track-${r}">${dots}</div><div class="tl-count" id="count-${r}" style="color:${COLOR[row.g.side]}"></div></div>`;
+  }).join('');
+  el('minute').max = P.timeline.minutes;
+  stopPlay();
+  setMinute(P.timeline.minutes);
+}
+function setMinute(value) {
+  const seconds = value * 60;
+  el('minute').value = value;
+  el('minute-out').textContent = `${Number.isInteger(value) ? value : value.toFixed(1)} ${ui.minuteUnit}`;
+  rows.forEach((row, r) => {
+    let shown = 0;
+    el(`track-${r}`).querySelectorAll('i').forEach((dot) => {
+      const lit = Number(dot.dataset.t) <= seconds;
+      dot.classList.toggle('lit', lit);
+      if (lit) shown += 1;
+    });
+    el(`count-${r}`).textContent = shown;
+  });
+}
+function stopPlay() {
+  if (playing) cancelAnimationFrame(playing);
+  playing = null;
+  el('play').textContent = ui.play;
+}
+el('minute').addEventListener('input', (event) => { stopPlay(); setMinute(Number(event.target.value)); });
+el('play').addEventListener('click', () => {
+  if (playing) { stopPlay(); return; }
+  const total = P.timeline.minutes;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setMinute(total); return; }
+  el('play').textContent = ui.pause;
+  const start = performance.now();
+  const tick = (now) => {
+    const value = Math.min(total, (now - start) / 7000 * total);
+    setMinute(Math.round(value * 4) / 4);
+    if (value < total) playing = requestAnimationFrame(tick); else stopPlay();
+  };
+  playing = requestAnimationFrame(tick);
+});
+
+/* Moves */
+function chips(target, items, key) {
+  el(target).innerHTML = items.map(([id, label]) => `<button class="chip" type="button" data-id="${id}" aria-pressed="${state[key] === id}">${label}</button>`).join('');
+}
+function bindChips(target, key, after) {
+  el(target).addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-id]');
+    if (!chip) return;
+    state[key] = chip.dataset.id;
+    el(target).querySelectorAll('[data-id]').forEach((node) => node.setAttribute('aria-pressed', String(node === chip)));
+    after();
+  });
+}
+const cardMatches = (card) => (state.topic === 'all' || card.topic === state.topic) && (state.game === 'all' || card.ours[state.game][0] !== 'ok');
+function detailHtml(index) {
+  const card = P.cards[index];
+  const ourBlocks = ours.map((g) => {
+    const value = card.ours[g.id];
+    return `<div class="block o"><h4>${g.short}<span class="state ${value[0]}">${stateLabel(value[0])}</span></h4><div>${value[1]}</div></div>`;
+  }).join('');
+  return `<div class="who-icons">${card.who.map((id) => icon(gameOf(id))).join('')}</div>
+    <h3>${card.title}</h3>
+    <div class="vs"><div class="t">${card.vs[0]}</div><span>VS</span><div class="u">${card.vs[1]}</div></div>
+    <div class="block t"><h4>${ui.them}</h4><div>${card.them}</div></div>
+    ${ourBlocks}
+    <div class="try"><h4>${ui.tryIt}</h4><div>${card.tryIt}</div></div>
+    <div class="tags">${card.goal ? `<span class="tag goal">${ui.goalPrefix}${card.goal}</span>` : ''}<span class="tag">${card.effort}</span>${card.after ? `<span class="tag after">${ui.afterTag}</span>` : ''}<span class="tag ${card.server ? 'server' : ''}">${card.status}</span></div>`;
+}
+function drawMatrix() {
+  const columns = [...rivals, ...ours];
+  const head = `<thead><tr class="group-head"><th></th><th colspan="${rivals.length}" class="rivals">${ui.groupRivals}</th><th colspan="${ours.length}" class="ours sep">${ui.groupOurs}</th></tr><tr><th></th>${columns.map((g, i) => `<th class="${i === rivals.length ? 'sep' : ''}">${icon(g)}<small>${g.short}</small></th>`).join('')}</tr></thead>`;
+  const body = [];
+  P.cards.forEach((card, index) => {
+    if (!cardMatches(card)) return;
+    const rivalCells = rivals.map((g) => {
+      const has = card.who.includes(g.id);
+      return `<td><i class="mark ${has ? 'has' : 'none'}" aria-label="${attr(has ? ui.rivalHas : ui.rivalNone)}"></i></td>`;
+    }).join('');
+    const ourCells = ours.map((g, i) => {
+      const value = card.ours[g.id];
+      return `<td class="${i === 0 ? 'sep' : ''}"><i class="mark ${value[0]}" style="font-style:normal" aria-label="${attr(stateLabel(value[0]))}">${MARKS[value[0]]}</i></td>`;
+    }).join('');
+    const selected = index === state.selected;
+    body.push(`<tr data-index="${index}" class="${selected ? 'sel' : ''}" tabindex="0" aria-expanded="${selected}"><td class="name"><div class="row-btn"><span class="row-num">${index + 1}</span><span><span class="row-title">${card.title}</span>${card.goal ? `<span class="row-goal">${card.goal}</span>` : ''}</span></div></td>${rivalCells}${ourCells}</tr>`);
+    if (selected && !wide.matches) body.push(`<tr class="inline-detail"><td colspan="${columns.length + 1}"><div class="panel detail">${detailHtml(index)}</div></td></tr>`);
+  });
+  el('matrix').innerHTML = head + `<tbody>${body.join('') || `<tr><td colspan="${columns.length + 1}" class="fine">${ui.noMatch}</td></tr>`}</tbody>`;
+  el('detail-side').innerHTML = detailHtml(state.selected);
+  el('detail-side').scrollTop = 0;
+}
+function refilter() {
+  if (!cardMatches(P.cards[state.selected])) {
+    const first = P.cards.findIndex(cardMatches);
+    if (first >= 0) state.selected = first;
+  }
+  drawMatrix();
+}
+el('matrix').addEventListener('click', (event) => {
+  const row = event.target.closest('tr[data-index]');
+  if (row) { state.selected = Number(row.dataset.index); drawMatrix(); }
+});
+el('matrix').addEventListener('keydown', (event) => {
+  const row = event.target.closest('tr[data-index]');
+  if (!row) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    state.selected = Number(row.dataset.index);
+    drawMatrix();
+  }
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    const all = [...el('matrix').querySelectorAll('tr[data-index]')];
+    const next = all[all.indexOf(row) + (event.key === 'ArrowDown' ? 1 : -1)];
+    if (next) {
+      state.selected = Number(next.dataset.index);
+      drawMatrix();
+      el('matrix').querySelector(`tr[data-index="${state.selected}"]`).focus();
+    }
+  }
+});
+wide.addEventListener('change', () => drawMatrix());
+el('top-moves').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-open]');
+  if (!button) return;
+  state.selected = Number(button.dataset.open);
+  drawMatrix();
+  location.hash = 'moves';
+});
+el('see-all').addEventListener('click', () => { location.hash = 'moves'; });
+
+/* Numbers */
+function drawLadders() {
+  const allValues = P.ladders.rows.flatMap((row) => [...Object.values(row.steps || {}), ...Object.values(row.postbid || {})].flat());
+  const low = Math.log10(Math.min(...allValues) * 0.66);
+  const high = Math.log10(Math.max(...allValues));
+  const heightFor = (value) => Math.max(4, (Math.log10(value) - low) / (high - low) * 110);
+  const money = (value) => (value >= 100 ? value.toFixed(0) : value >= 10 ? value.toFixed(1).replace('.0', '') : value >= 1 ? value.toFixed(1) : value.toFixed(2));
+  const bars = (values, color, faded) => values.map((value) => `<div class="col-bar" title="$${value}"><span>${money(value)}</span><i style="height:${heightFor(value).toFixed(0)}px;background:${color};${faded ? 'opacity:.55' : ''}"></i></div>`).join('');
+  el('ladders').innerHTML = P.ladders.rows.map((row) => {
+    const g = gameOf(row.game);
+    const head = `<div class="ladder-head">${icon(g)}<div><b>${g.name}</b></div></div>`;
+    if (row.empty) return `<div class="ladder">${head}<p class="sub">${row.empty}</p></div>`;
+    const post = row.postbid && row.postbid[state.format];
+    const plot = bars(row.steps[state.format], COLOR[g.side], false) + (post ? `<span class="plot-gap"></span>${bars(post, COLOR[g.side], true)}` : '');
+    return `<div class="ladder">${head}<div class="plot">${plot}</div><p class="fine">${post ? ui.ladderKey : ''}${row.note}</p></div>`;
+  }).join('');
+}
+function drawCharts() {
+  el('charts').innerHTML = P.charts.map((chart) => {
+    const top = Math.max(...chart.rows.map((row) => row.value));
+    const bars = chart.rows.map((row) => {
+      const g = gameOf(row.game);
+      return `<div class="bar">${icon(g)}<div class="bar-fill"><i style="width:${(row.value / top * 58).toFixed(1)}%;background:${COLOR[g.side]}"></i><span>${row.label}</span></div></div>`;
+    }).join('');
+    return `<div class="panel stack"><h2>${chart.title}</h2><div class="bars">${bars}</div>${chart.foot ? `<p class="fine">${chart.foot}</p>` : ''}</div>`;
+  }).join('');
+}
+
+/* Rivals and call */
+function drawLists() {
+  el('publishers').innerHTML = P.publishers.map((p) => `<div class="panel stack"><div class="rival-head">${p.games.map((id) => icon(gameOf(id))).join('')}<h2>${p.name}</h2></div><ul class="clean">${listItems(p.good)}</ul><p class="fine"><b>${ui.weakLabel}</b> ${p.weak}</p></div>`).join('');
+  el('not-behind').innerHTML = listItems(P.notBehind);
+  el('say-it').innerHTML = listItems(P.sayIt);
+  el('limits').innerHTML = listItems(P.limits);
+  el('words').innerHTML = P.words.map(([term, text]) => `<dt>${term}</dt><dd>${text}</dd>`).join('');
+  el('qbar').innerHTML = P.questions.map((q) => `<span style="flex:${q.n};background:var(--${q.tone})"></span>`).join('');
+  el('qlegend').innerHTML = P.questions.map((q) => `<span><i style="background:var(--${q.tone})"></i>${q.n} ${q.text}</span>`).join('');
+}
+
+function render() {
+  P = BUNDLE.pages[state.lang];
+  ui = P.ui;
+  rivals = P.games.filter((g) => g.side === 'them');
+  ours = P.games.filter((g) => g.side === 'us');
+  document.documentElement.lang = state.lang;
+  document.title = ui.title;
+  document.querySelectorAll('[data-text]').forEach((node) => { node.innerHTML = ui[node.dataset.text]; });
+  el('tabs').innerHTML = [['overview', ui.tabOverview], ['moves', ui.tabMoves], ['numbers', ui.tabNumbers], ['rivals', ui.tabRivals], ['call', ui.tabCall]]
+    .map(([id, label]) => `<button class="tab" role="tab" type="button" id="tab-${id}" data-view="${id}">${label}</button>`).join('');
+  el('lang').hidden = LANGS.length < 2;
+  el('lang').innerHTML = LANGS.map((code) => `<button type="button" data-lang="${code}" aria-pressed="${code === state.lang}">${BUNDLE.pages[code].languageName}</button>`).join('');
+  if (!state.format) state.format = P.ladders.formats[0][0];
+  chips('topic-filter', P.topics, 'topic');
+  chips('game-filter', [['all', ui.allOurGames], ...ours.map((g) => [g.id, g.short])], 'game');
+  chips('format-filter', P.ladders.formats, 'format');
+  applyView();
+  drawOverview();
+  drawTimeline();
+  drawMatrix();
+  drawLadders();
+  drawCharts();
+  drawLists();
+}
+
+el('tabs').addEventListener('click', (event) => {
+  const tab = event.target.closest('[data-view]');
+  if (tab) location.hash = tab.dataset.view;
+});
+el('lang').addEventListener('click', (event) => {
+  const button = event.target.closest('[data-lang]');
+  if (!button) return;
+  state.lang = button.dataset.lang;
+  try { localStorage.setItem('page-lang', state.lang); } catch (error) { /* storage can be blocked; the switch still works */ }
+  render();
+});
+window.addEventListener('hashchange', () => { applyView(); window.scrollTo(0, 0); });
+bindChips('topic-filter', 'topic', refilter);
+bindChips('game-filter', 'game', refilter);
+bindChips('format-filter', 'format', drawLadders);
+
+let saved = null;
+try { saved = localStorage.getItem('page-lang'); } catch (error) { /* storage can be blocked */ }
+const wanted = saved || (navigator.language || '').slice(0, 2);
+if (LANGS.includes(wanted)) state.lang = wanted;
+render();
+</script>
+</body>
+</html>

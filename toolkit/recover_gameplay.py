@@ -101,6 +101,7 @@ def main():
     parser.add_argument('--unity-version')
     parser.add_argument('--assemblies', default='Assembly-CSharp')
     parser.add_argument('--include-namespace', action='append', default=[])
+    parser.add_argument('--budget', type=int, default=180, help='seconds allowed for each tool run; large binaries need more')
     options = parser.parse_args()
     input_path = options.input.resolve(strict=True)
     output = options.output.resolve()
@@ -128,20 +129,22 @@ def main():
             environment['TOOLKIT_RECOVERY_ASSEMBLIES'] = ','.join(names)
             environment['RECOVERY_METHOD_MAP_PATH'] = str(evidence / 'method-map.tsv')
             command = tool_command(options.cpp2il.resolve()) + ['--force-binary-path', str(info['binary']), '--force-metadata-path', str(info['metadata']), '--force-unity-version', version, '--use-processor', 'attributeanalyzer', '--output-as', 'dll_il_recovery', '--output-to', str(dll_directory)]
-            run(command, evidence / 'cpp2il.log', environment, 180)
+            run(command, evidence / 'cpp2il.log', environment, options.budget)
             assemblies = {name + '.dll': dll_directory / (name + '.dll') for name in names}
         else:
             version = options.unity_version or info['unity_version']
             assemblies = info['assemblies']
         files = []
+        missing = []
         export_errors = 0
         for name in names:
             assembly = assemblies.get(name + '.dll')
             if assembly is None or assembly.exists() == False:
-                raise RuntimeError(f'Requested assembly {name} is missing')
+                missing.append(name)
+                continue
             export = work / ('csharp-' + name)
             log = evidence / (name + '-ilspy.log')
-            run(tool_command(options.ilspy.resolve()) + ['-p', '-o', str(export), str(assembly)], log, environment, 120, allowed_codes=(0, 70))
+            run(tool_command(options.ilspy.resolve()) + ['-p', '-o', str(export), str(assembly)], log, environment, options.budget, allowed_codes=(0, 70))
             if export.exists() == False or any(export.rglob('*.cs')) == False:
                 raise RuntimeError(f'ILSpy produced no source; inspect {log}')
             export_errors += log.read_text(errors='replace').count('Error decompiling')
@@ -159,8 +162,10 @@ def main():
                 exceptions = bool(re.search(r'\breturn[^;\n]*\)ex\w*\b', text))
                 placeholders = len(re.findall(r'\bthrow\s+null\s*;', text))
                 files.append({'file': str(relative), 'sha256': sha256(destination), 'diagnostic_calls': diagnostics, 'il_warning_comments': warnings, 'backing_field_or_enum_artifacts': invalid_identifier, 'suspect_exception_return': exceptions, 'placeholder_throws': placeholders, 'status': 'incomplete' if diagnostics or warnings or invalid_identifier or exceptions or placeholders else 'unverified'})
-        blocked = export_errors > 0 or any(item['status'] == 'incomplete' for item in files)
-        report = {'input': input_path.name, 'input_sha256': sha256(input_path), 'backend': info['backend'], 'unity_version': version, 'metadata_version': info.get('metadata_version'), 'native_binary_sha256': sha256(info['binary']) if info['backend'] == 'IL2CPP' else None, 'cpp2il_sha256': sha256(options.cpp2il) if options.cpp2il else None, 'cpp2il_core_sha256': sha256(options.cpp2il.parent / 'Cpp2IL.Core.dll') if options.cpp2il and (options.cpp2il.parent / 'Cpp2IL.Core.dll').exists() else None, 'ilspy_sha256': sha256(options.ilspy), 'file_count': len(files), 'ilspy_method_errors': export_errors, 'quality_gate': 'blocked' if blocked else 'unverified', 'original_source_recovered': False, 'native_equivalence_verified': False, 'method_address_evidence': (evidence / 'method-map.tsv').exists(), 'files': files}
+        if len(missing) == len(names):
+            raise RuntimeError('None of the requested assemblies was produced: ' + ', '.join(names))
+        blocked = bool(missing) or export_errors > 0 or any(item['status'] == 'incomplete' for item in files)
+        report = {'input': input_path.name, 'input_sha256': sha256(input_path), 'backend': info['backend'], 'unity_version': version, 'metadata_version': info.get('metadata_version'), 'native_binary_sha256': sha256(info['binary']) if info['backend'] == 'IL2CPP' else None, 'cpp2il_sha256': sha256(options.cpp2il) if options.cpp2il else None, 'cpp2il_core_sha256': sha256(options.cpp2il.parent / 'Cpp2IL.Core.dll') if options.cpp2il and (options.cpp2il.parent / 'Cpp2IL.Core.dll').exists() else None, 'ilspy_sha256': sha256(options.ilspy), 'file_count': len(files), 'missing_assemblies': missing, 'ilspy_method_errors': export_errors, 'quality_gate': 'blocked' if blocked else 'unverified', 'original_source_recovered': False, 'native_equivalence_verified': False, 'method_address_evidence': (evidence / 'method-map.tsv').exists(), 'files': files}
         (output / 'quality.json').write_text(json.dumps(report, indent=2))
         (output / 'README.md').write_text('APK-derived decompiler output. This is not exact original source or a verified working project. Read quality.json before using any method. No diagnostic-free file is automatically classified as correct. Native-address evidence is included when the patched engine supports it. Vendor filtering is heuristic; use --include-namespace for explicit scope.\n')
         print(json.dumps({key: report[key] for key in ['file_count', 'ilspy_method_errors', 'quality_gate', 'native_equivalence_verified']}))

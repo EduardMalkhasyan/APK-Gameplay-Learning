@@ -50,7 +50,7 @@ The inventory flags Unity, Flutter, Godot, Unreal and Cocos libraries plus Lua a
 | `assets/www/**` or other HTML | WebView / HTML5 | JS | `assets/` |
 | only `classes*.dex` | Java / Kotlin | dex | `res/`, `assets/` |
 
-Ignore ad, analytics and attribution SDKs, in native libraries and in code packages alike (Google Mobile Ads, AppLovin, Unity Ads, ironSource, Meta, AppsFlyer, Adjust, Firebase, Appodeal and so on). Ignore the engine's own code too. Several engines can share one package.
+For gameplay, ignore ad, analytics and attribution SDKs, in native libraries and in code packages alike (Google Mobile Ads, AppLovin, Unity Ads, ironSource, Meta, AppsFlyer, Adjust, Firebase, Appodeal and so on). Ignore the engine's own code too. Several engines can share one package. To study how a game earns money instead, follow [MONETIZATION.md](MONETIZATION.md).
 
 ## 3. Extract the assets
 
@@ -84,7 +84,7 @@ What we learned:
 - **Values** (ScriptableObjects and MonoBehaviours: levels, prices, tuning).
   - AssetBundles and Addressables carry type trees, so these values read directly.
   - Player builds usually strip them. The exporter then generates type trees from the Mono DLLs or from the IL2CPP binary plus metadata.
-  - On Unity 6000.x IL2CPP builds generation did not work (October 2026). Take those numbers from text assets, strings and screenshots.
+  - On Unity 6000.x IL2CPP builds, loading the binary directly fails. Generate dummy assemblies with Cpp2IL (`--use-processor attributeanalyzer,attributeinjector --output-as dummydll`) and pass them with `--dll-folder`: see [MONETIZATION.md](MONETIZATION.md) step 2. This read nearly every script value on 6000.0 and 6000.3 builds (November 2026).
 - **Text.** If the game uses Unity Localization, its string tables (in the Addressables bundles) hold the player-facing text, which is a fast map of features. Other games keep text in I2 Localization assets or CSV/JSON text assets.
 - **Fonts.** TextMeshPro fonts usually ship only as SDF atlases (no TTF), so identify the typeface by its name.
 - **Audio.** FSB5 banks are decoded through fmod_toolkit, which is included. Wwise `.bnk`/`.wem` need vgmstream.
