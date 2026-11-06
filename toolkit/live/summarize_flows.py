@@ -31,8 +31,9 @@ def request_host(flow):
 def response(flow):
     host = request_host(flow).split(':')[0]
     hosts[host] += 1
-    body = flow.response.content or b''
-    sent = flow.request.content or b''
+    # strict=False keeps the raw bytes when a body uses an encoding mitmproxy cannot decode, such as 'encrypted'.
+    body = flow.response.get_content(strict=False) or b''
+    sent = flow.request.get_content(strict=False) or b''
     row = {'t': round(flow.request.timestamp_start, 1), 'method': flow.request.method, 'host': host,
            'path': flow.request.path.split('?')[0][:120], 'status': flow.response.status_code,
            'sent': len(sent), 'got': len(body), 'type': flow.response.headers.get('content-type', '')[:40]}

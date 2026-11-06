@@ -4,7 +4,7 @@ A package holds defaults. A server can change them per player, so a short sessio
 
 ## What it gives, best value first
 
-1. **The config the game saved on the device.** After one launch, read the app's data folder as root. Publisher SDKs often keep the live config as plain JSON, even when the request and reply on the wire are compressed or encrypted. Diff it against the copy bundled in the package with `toolkit/live/diff_json.py`. One session showed 245 differences: other pacing, a 14-step floor ladder, a per-device floor base, a segment number and A/B experiment ids.
+1. **The config the game saved on the device.** After one launch, read the app's data folder as root. Publisher SDKs often keep the live config as plain JSON, even when the request and reply on the wire are compressed or encrypted. Firebase Remote Config keeps the activated values in `files/frc_<app id>_firebase_activate.json`, with the template version and any A/B experiments. Diff such files against the copy bundled in the package with `toolkit/live/diff_json.py`. Parameters the server does not send keep their bundled defaults, and that is a finding too. One session showed 245 differences: other pacing, a 14-step floor ladder, a per-device floor base, a segment number and A/B experiment ids.
 2. **Local state.** Shared preferences and small JSON files hold the client's segment, offers already shown and impression history.
 3. **Traffic.** Which hosts, which MAX ad units and waterfalls, and when impressions fire.
 4. **Logs.** `adb logcat -b all` shows what the game and SDKs print.
@@ -49,5 +49,8 @@ python3 toolkit/live/diff_json.py <work>/<game>/unzipped/assets/<bundled config>
 - MAX marks emulator traffic as testing: test creatives and zero revenue. Real waterfalls need a real device, and live ads on test devices can count as invalid traffic, so keep any such session short and never click.
 - Encrypted requests stay closed: do not extract keys or hook the app. Do not defeat PairIP or other protection; a protected game may refuse to run, and that is the result.
 - Store purchases do not work without the Play Store, so payer and whale behaviour stay out of reach.
+- Many games open with a terms or consent screen and load nothing until it is accepted. Accepting is the user's decision: ask once at the start of the run.
+- Some SDK replies use `Content-Encoding: encrypted`. The summary keeps their raw bytes; leave them closed.
+- Scripted input does not play every game: an aiming tutorial may ignore swipes. Read what a launch gives before planning a long play session.
 - One session is one player in one country and one A/B arm. Say so in every finding.
 - Captures and data folders hold device ids, advertising ids and tokens. Keep them in the work folder, mask them in reports, delete the work folder afterwards.
