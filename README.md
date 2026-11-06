@@ -1,4 +1,4 @@
-# APK Game Learning
+# APK Game Teardown
 
 **Learn how mobile games play and earn money from their Android packages, then build your own.**
 
