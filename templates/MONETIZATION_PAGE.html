@@ -364,6 +364,20 @@ footer { max-width: 1400px; margin: 0 auto; padding: 0 24px 40px; color: var(--d
     </div>
   </section>
 
+  <section class="view" id="view-stack">
+    <div class="panel stack">
+      <h2 id="stack-title"></h2>
+      <p class="sub" id="stack-help"></p>
+      <div class="matrix-wrap"><table class="matrix stack-table" id="stack-table"></table></div>
+      <p class="fine" id="stack-foot"></p>
+    </div>
+  </section>
+
+  <section class="view" id="view-roadmap">
+    <div class="panel stack"><h2 id="roadmap-title"></h2><p class="sub" id="roadmap-help"></p></div>
+    <div class="three" id="roadmap-items"></div>
+  </section>
+
   <section class="view" id="view-call">
     <div class="two">
       <div class="panel stack"><h2 data-text="sayItTitle"></h2><ul class="clean" id="say-it"></ul></div>
@@ -389,7 +403,9 @@ footer { max-width: 1400px; margin: 0 auto; padding: 0 24px 40px; color: var(--d
 /* Everything shown comes from the data block, one page per language. Strings may hold simple HTML. */
 const BUNDLE = JSON.parse(document.getElementById('page-data').textContent);
 const LANGS = Object.keys(BUNDLE.pages);
-const VIEWS = ['overview', 'moves', 'numbers', 'rivals', 'call'];
+const VIEWS = ['overview', 'moves', 'numbers', 'stack', 'roadmap', 'rivals', 'call'];
+const OPTIONAL = ['stack', 'roadmap'];
+const available = (view) => !OPTIONAL.includes(view) || Boolean(P && P[view]);
 const COLOR = { us: 'var(--us)', them: 'var(--them)' };
 const MARKS = { gap: '✕', part: '~', ok: '✓' };
 const el = (id) => document.getElementById(id);
@@ -411,13 +427,13 @@ const listItems = (items) => items.map((item) => `<li>${item}</li>`).join('');
 /* Views */
 function currentView() {
   const name = location.hash.slice(1);
-  return VIEWS.includes(name) ? name : 'overview';
+  return VIEWS.includes(name) && available(name) ? name : 'overview';
 }
 function applyView() {
   const name = currentView();
   VIEWS.forEach((view) => {
     el(`view-${view}`).classList.toggle('on', view === name);
-    el(`tab-${view}`).setAttribute('aria-selected', String(view === name));
+    if (el(`tab-${view}`)) el(`tab-${view}`).setAttribute('aria-selected', String(view === name));
   });
 }
 
@@ -617,6 +633,29 @@ function drawLists() {
   el('qlegend').innerHTML = P.questions.map((q) => `<span><i style="background:var(--${q.tone})"></i>${q.n} ${q.text}</span>`).join('');
 }
 
+/* Optional: ad stack table and roadmap */
+function drawStack() {
+  if (!P.stack) return;
+  const s = P.stack;
+  el('stack-title').innerHTML = s.title;
+  el('stack-help').innerHTML = s.help;
+  el('stack-foot').innerHTML = s.foot || '';
+  const head = `<thead><tr><th></th>${s.columns.map((c) => `<th style="text-align:left">${c}</th>`).join('')}</tr></thead>`;
+  const rows = s.rows.map((row) => {
+    const g = gameOf(row.game);
+    return `<tr><td class="name"><div class="tl-name">${icon(g)}<span><b>${g.short}</b></span></div></td>${row.cells.map((c) => `<td style="text-align:left;font-size:13.5px;color:var(--soft)">${c}</td>`).join('')}</tr>`;
+  }).join('');
+  el('stack-table').innerHTML = head + `<tbody>${rows}</tbody>`;
+}
+function drawRoadmap() {
+  if (!P.roadmap) return;
+  const r = P.roadmap;
+  el('roadmap-title').innerHTML = r.title;
+  el('roadmap-help').innerHTML = r.help;
+  const line = (label, text) => `<div class="block"><h4>${label}</h4><div>${text}</div></div>`;
+  el('roadmap-items').innerHTML = r.items.map((item, index) => `<div class="panel stack"><div class="rival-head"><span class="row-num">${index + 1}</span><h2>${item.title}</h2></div>${line(ui.rmWhat, item.what)}${line(ui.rmWhy, item.why)}${line(ui.rmImpact, item.impact)}${line(ui.rmEffort, item.effort)}<div class="tags"><span class="tag goal">${item.priority}</span></div></div>`).join('');
+}
+
 function render() {
   P = BUNDLE.pages[state.lang];
   ui = P.ui;
@@ -625,8 +664,8 @@ function render() {
   document.documentElement.lang = state.lang;
   document.title = ui.title;
   document.querySelectorAll('[data-text]').forEach((node) => { node.innerHTML = ui[node.dataset.text]; });
-  el('tabs').innerHTML = [['overview', ui.tabOverview], ['moves', ui.tabMoves], ['numbers', ui.tabNumbers], ['rivals', ui.tabRivals], ['call', ui.tabCall]]
-    .map(([id, label]) => `<button class="tab" role="tab" type="button" id="tab-${id}" data-view="${id}">${label}</button>`).join('');
+  el('tabs').innerHTML = [['overview', ui.tabOverview], ['moves', ui.tabMoves], ['numbers', ui.tabNumbers], ['stack', ui.tabStack], ['roadmap', ui.tabRoadmap], ['rivals', ui.tabRivals], ['call', ui.tabCall]]
+    .filter(([id]) => available(id)).map(([id, label]) => `<button class="tab" role="tab" type="button" id="tab-${id}" data-view="${id}">${label}</button>`).join('');
   el('lang').hidden = LANGS.length < 2;
   el('lang').innerHTML = LANGS.map((code) => `<button type="button" data-lang="${code}" aria-pressed="${code === state.lang}">${BUNDLE.pages[code].languageName}</button>`).join('');
   if (!state.format) state.format = P.ladders.formats[0][0];
@@ -640,6 +679,8 @@ function render() {
   drawLadders();
   drawCharts();
   drawLists();
+  drawStack();
+  drawRoadmap();
 }
 
 el('tabs').addEventListener('click', (event) => {

@@ -2,35 +2,110 @@
   "lang": "en",
   "languageName": "EN",
   "answer": "One or two sentences: the main answer. Everything in this file is a made-up example. Strings may hold simple HTML such as <code>code</code> or <b>bold</b>.",
-  "hero": { "percent": 60, "label": "60%", "caption": "One number that frames the gap. Example: our result against the best rival." },
+  "hero": {
+    "percent": 60,
+    "label": "60%",
+    "caption": "One number that frames the gap. Example: our result against the best rival."
+  },
   "focus": {
     "title": "Where the gap is",
     "split": [
-      { "share": 1, "tone": "them", "label": "One part: example cause" },
-      { "share": 2, "tone": "bad", "label": "Two parts: example cause" }
+      {
+        "share": 1,
+        "tone": "them",
+        "label": "One part: example cause"
+      },
+      {
+        "share": 2,
+        "tone": "bad",
+        "label": "Two parts: example cause"
+      }
     ],
     "text": "What closing the gap is worth, and why it sets the order of the moves."
   },
   "goals": {
     "title": "What we are fighting for",
-    "items": ["<b>Team A:</b> its goal and number, from company sources.", "<b>Team B:</b> its goal and open question."]
+    "items": [
+      "<b>Team A:</b> its goal and number, from company sources.",
+      "<b>Team B:</b> its goal and open question."
+    ]
   },
   "games": [
-    { "id": "alpha", "name": "Rival Alpha", "short": "Alpha", "publisher": "Publisher One", "stat": "10M+ installs, rating 4.5", "side": "them", "icon": "" },
-    { "id": "beta", "name": "Rival Beta", "short": "Beta", "publisher": "Publisher Two", "stat": "10M+ installs, rating 4.2", "side": "them", "icon": "" },
-    { "id": "ours1", "name": "Our Puzzle", "short": "Puzzle", "publisher": "Our studio", "stat": "1M+ installs, rating 3.9", "side": "us", "icon": "" },
-    { "id": "ours2", "name": "Our Tycoon", "short": "Tycoon", "publisher": "Our studio", "stat": "1M+ installs, rating 4.0", "side": "us", "icon": "" }
+    {
+      "id": "alpha",
+      "name": "Rival Alpha",
+      "short": "Alpha",
+      "publisher": "Publisher One",
+      "stat": "10M+ installs, rating 4.5",
+      "side": "them",
+      "icon": ""
+    },
+    {
+      "id": "beta",
+      "name": "Rival Beta",
+      "short": "Beta",
+      "publisher": "Publisher Two",
+      "stat": "10M+ installs, rating 4.2",
+      "side": "them",
+      "icon": ""
+    },
+    {
+      "id": "ours1",
+      "name": "Our Puzzle",
+      "short": "Puzzle",
+      "publisher": "Our studio",
+      "stat": "1M+ installs, rating 3.9",
+      "side": "us",
+      "icon": ""
+    },
+    {
+      "id": "ours2",
+      "name": "Our Tycoon",
+      "short": "Tycoon",
+      "publisher": "Our studio",
+      "stat": "1M+ installs, rating 4.0",
+      "side": "us",
+      "icon": ""
+    }
   ],
-  "topics": [["all", "All"], ["timing", "When to show"], ["selling", "What they sell"]],
+  "topics": [
+    [
+      "all",
+      "All"
+    ],
+    [
+      "timing",
+      "When to show"
+    ],
+    [
+      "selling",
+      "What they sell"
+    ]
+  ],
   "cards": [
     {
       "topic": "timing",
       "goal": "Retention",
       "title": "Rank moves by the team's goals: the first five also open the overview",
-      "who": ["alpha", "beta"],
-      "vs": ["30 s pause", "no pause"],
+      "who": [
+        "alpha",
+        "beta"
+      ],
+      "vs": [
+        "30 s pause",
+        "no pause"
+      ],
       "them": "What the rivals do, with values from their builds. Say when a value is only a bundled default.",
-      "ours": { "ours1": ["gap", "What this game does today."], "ours2": ["part", "What this game does today."] },
+      "ours": {
+        "ours1": [
+          "gap",
+          "What this game does today."
+        ],
+        "ours2": [
+          "part",
+          "What this game does today."
+        ]
+      },
       "tryIt": "The smallest test worth running, with its metric and its risk.",
       "effort": "Dev build",
       "after": false,
@@ -41,10 +116,24 @@
       "topic": "selling",
       "goal": "",
       "title": "State gap means behind, part means partly, ok means not behind",
-      "who": ["alpha"],
-      "vs": ["price ladder", "one price"],
+      "who": [
+        "alpha"
+      ],
+      "vs": [
+        "price ladder",
+        "one price"
+      ],
       "them": "Another pattern seen in a build.",
-      "ours": { "ours1": ["ok", "Filtering by this game hides the move, since it is not behind."], "ours2": ["gap", "What this game does today."] },
+      "ours": {
+        "ours1": [
+          "ok",
+          "Filtering by this game hides the move, since it is not behind."
+        ],
+        "ours2": [
+          "gap",
+          "What this game does today."
+        ]
+      },
       "tryIt": "Another test.",
       "effort": "Remote config",
       "after": true,
@@ -55,17 +144,90 @@
   "timeline": {
     "minutes": 30,
     "rows": [
-      { "game": "alpha", "label": "Rival Alpha", "first": 60, "gaps": [], "gap": 60 },
-      { "game": "beta", "label": "Rival Beta", "first": 120, "gaps": [120, 100], "gap": 90 },
-      { "game": "ours1", "label": "Our Puzzle", "first": 600, "gaps": [], "gap": 180 }
+      {
+        "game": "alpha",
+        "label": "Rival Alpha",
+        "first": 60,
+        "gaps": [],
+        "gap": 60
+      },
+      {
+        "game": "beta",
+        "label": "Rival Beta",
+        "first": 120,
+        "gaps": [
+          120,
+          100
+        ],
+        "gap": 90
+      },
+      {
+        "game": "ours1",
+        "label": "Our Puzzle",
+        "first": 600,
+        "gaps": [],
+        "gap": 180
+      }
     ]
   },
   "ladders": {
-    "formats": [["inter", "Interstitial"], ["rew", "Rewarded"]],
+    "formats": [
+      [
+        "inter",
+        "Interstitial"
+      ],
+      [
+        "rew",
+        "Rewarded"
+      ]
+    ],
     "rows": [
-      { "game": "alpha", "note": "Snapshot country and what happens after the last step.", "steps": { "inter": [20, 10, 5], "rew": [40, 20, 10] }, "postbid": { "inter": [24, 22], "rew": [48, 44] } },
-      { "game": "beta", "empty": "No floor values in the client. Say where they probably live." },
-      { "game": "ours1", "note": "Source of these values.", "steps": { "inter": [30, 12, 6], "rew": [50, 20, 8] } }
+      {
+        "game": "alpha",
+        "note": "Snapshot country and what happens after the last step.",
+        "steps": {
+          "inter": [
+            20,
+            10,
+            5
+          ],
+          "rew": [
+            40,
+            20,
+            10
+          ]
+        },
+        "postbid": {
+          "inter": [
+            24,
+            22
+          ],
+          "rew": [
+            48,
+            44
+          ]
+        }
+      },
+      {
+        "game": "beta",
+        "empty": "No floor values in the client. Say where they probably live."
+      },
+      {
+        "game": "ours1",
+        "note": "Source of these values.",
+        "steps": {
+          "inter": [
+            30,
+            12,
+            6
+          ],
+          "rew": [
+            50,
+            20,
+            8
+          ]
+        }
+      }
     ]
   },
   "charts": [
@@ -73,50 +235,168 @@
       "title": "Gap between interstitials",
       "foot": "Say where the values come from.",
       "rows": [
-        { "game": "alpha", "value": 60, "label": "60 s" },
-        { "game": "beta", "value": 90, "label": "90 s" },
-        { "game": "ours1", "value": 180, "label": "180 s" }
+        {
+          "game": "alpha",
+          "value": 60,
+          "label": "60 s"
+        },
+        {
+          "game": "beta",
+          "value": 90,
+          "label": "90 s"
+        },
+        {
+          "game": "ours1",
+          "value": 180,
+          "label": "180 s"
+        }
       ]
     }
   ],
   "publishers": [
-    { "name": "Publisher One", "games": ["alpha"], "good": ["What this publisher does well.", "Another strength."], "weak": "Its main weakness, for balance." }
+    {
+      "name": "Publisher One",
+      "games": [
+        "alpha"
+      ],
+      "good": [
+        "What this publisher does well.",
+        "Another strength."
+      ],
+      "weak": "Its main weakness, for balance."
+    }
   ],
-  "notBehind": ["<b>A topic.</b> Where we match or beat them, so nobody builds it twice."],
-  "sayIt": ["The sentences worth saying in the meeting."],
+  "notBehind": [
+    "<b>A topic.</b> Where we match or beat them, so nobody builds it twice."
+  ],
+  "sayIt": [
+    "The sentences worth saying in the meeting."
+  ],
   "questions": [
-    { "n": 3, "text": "answered", "tone": "good" },
-    { "n": 2, "text": "partly", "tone": "mid" },
-    { "n": 1, "text": "server only", "tone": "them" },
-    { "n": 1, "text": "not in the build", "tone": "dim" }
+    {
+      "n": 3,
+      "text": "answered",
+      "tone": "good"
+    },
+    {
+      "n": 2,
+      "text": "partly",
+      "tone": "mid"
+    },
+    {
+      "n": 1,
+      "text": "server only",
+      "tone": "them"
+    },
+    {
+      "n": 1,
+      "text": "not in the build",
+      "tone": "dim"
+    }
   ],
-  "limits": ["<b>A dashboard:</b> what only a dashboard or a device session can show."],
-  "words": [["Floor", "The minimum price for an impression."], ["Postbid", "A later request above the price already loaded."]],
+  "limits": [
+    "<b>A dashboard:</b> what only a dashboard or a device session can show."
+  ],
+  "words": [
+    [
+      "Floor",
+      "The minimum price for an impression."
+    ],
+    [
+      "Postbid",
+      "A later request above the price already loaded."
+    ]
+  ],
   "ui": {
     "brand": "<em>Us</em> vs <b>rivals</b>",
     "title": "What competitors do better than us",
-    "tabOverview": "Overview", "tabMoves": "What they do better", "tabNumbers": "Numbers", "tabRivals": "Rivals", "tabCall": "For the call",
-    "sideUs": "Us", "sideThem": "Rivals",
+    "tabOverview": "Overview",
+    "tabMoves": "What they do better",
+    "tabNumbers": "Numbers",
+    "tabRivals": "Rivals",
+    "tabCall": "For the call",
+    "sideUs": "Us",
+    "sideThem": "Rivals",
     "timelineTitle": "How many interstitials can show in the first minutes of play",
-    "play": "▶ Play 30 minutes", "pause": "❚❚ Pause", "scrubLabel": "Drag time", "minuteUnit": "min",
+    "play": "▶ Play 30 minutes",
+    "pause": "❚❚ Pause",
+    "scrubLabel": "Drag time",
+    "minuteUnit": "min",
     "timelineNote": "This is the ceiling from the timers in each build; real impressions are lower.",
-    "topMovesTitle": "What matters most for our goals", "seeAll": "See all moves",
+    "topMovesTitle": "What matters most for our goals",
+    "seeAll": "See all moves",
     "honest": "\"Better\" means a stronger design in a build, not proven revenue. Live server values and dashboards are not visible.",
     "movesTitle": "What they do better",
     "movesHelp": "Click a row to see what they do, what we do and what to try.",
-    "legendHas": "Rival does it", "legendGap": "We lag", "legendPart": "Partly", "legendOk": "Not behind",
-    "allOurGames": "All our games", "groupRivals": "Rivals", "groupOurs": "Us", "noMatch": "Nothing matches this filter.",
-    "rivalHas": "does it", "rivalNone": "no",
-    "them": "They", "tryIt": "What to try", "goalPrefix": "Goal: ", "afterTag": "After another test",
-    "stateGap": "Behind", "statePart": "Partly", "stateOk": "Not behind",
+    "legendHas": "Rival does it",
+    "legendGap": "We lag",
+    "legendPart": "Partly",
+    "legendOk": "Not behind",
+    "allOurGames": "All our games",
+    "groupRivals": "Rivals",
+    "groupOurs": "Us",
+    "noMatch": "Nothing matches this filter.",
+    "rivalHas": "does it",
+    "rivalNone": "no",
+    "them": "They",
+    "tryIt": "What to try",
+    "goalPrefix": "Goal: ",
+    "afterTag": "After another test",
+    "stateGap": "Behind",
+    "statePart": "Partly",
+    "stateOk": "Not behind",
     "floorsTitle": "Floors: how they ask for a price",
     "floorsHelp": "Bar height is the minimum price in dollars per 1,000 impressions, on a log scale shared by all games.",
     "ladderKey": "Bright bars: load steps. Pale bars: postbid. ",
-    "weakLabel": "Downside:", "notBehindTitle": "Where we are not behind",
-    "sayItTitle": "What to say on the call", "questionsTitle": "What the teardown has answered", "questionsHelp": "The team's questions for the rival builds.",
+    "weakLabel": "Downside:",
+    "notBehindTitle": "Where we are not behind",
+    "sayItTitle": "What to say on the call",
+    "questionsTitle": "What the teardown has answered",
+    "questionsHelp": "The team's questions for the rival builds.",
     "questionsNote": "Say which question matters most and where the goals came from.",
-    "limitsTitle": "What a build cannot show", "limitsHelp": "One device session would settle these.",
+    "limitsTitle": "What a build cannot show",
+    "limitsHelp": "One device session would settle these.",
     "wordsTitle": "Glossary",
-    "footer": "Static analysis. Build values are defaults and the server may change them. No game was run."
+    "footer": "Static analysis. Build values are defaults and the server may change them. No game was run.",
+    "tabStack": "Ad stack",
+    "tabRoadmap": "Roadmap",
+    "rmWhat": "What",
+    "rmWhy": "Why",
+    "rmImpact": "Impact",
+    "rmEffort": "Effort"
+  },
+  "stack": {
+    "title": "Ad stack",
+    "help": "Optional. One row per game; tag every cell with its source.",
+    "columns": [
+      "Mediation",
+      "Bidding",
+      "Waterfall"
+    ],
+    "rows": [
+      {
+        "game": "alpha",
+        "cells": [
+          "MAX (scan)",
+          "Network A, Network B (live)",
+          "Network C (live)"
+        ]
+      }
+    ],
+    "foot": "Sources: package scan, live run."
+  },
+  "roadmap": {
+    "title": "SDK roadmap",
+    "help": "Optional. 3 to 5 items, each tied to a finding.",
+    "items": [
+      {
+        "title": "Example item",
+        "what": "What the SDK does.",
+        "why": "The finding or client request behind it.",
+        "impact": "Which KR it moves and roughly how much.",
+        "effort": "Rough size and dependencies.",
+        "priority": "Q4 must-have"
+      }
+    ]
   }
 }

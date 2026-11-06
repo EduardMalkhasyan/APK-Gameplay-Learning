@@ -71,6 +71,7 @@ def check_page(page, template):
     used = [row['game'] for row in page['timeline']['rows']] + [row['game'] for row in page['ladders']['rows']]
     used += [row['game'] for chart in page['charts'] for row in chart['rows']]
     used += [game for publisher in page['publishers'] for game in publisher['games']]
+    used += [row['game'] for row in page.get('stack', {}).get('rows', [])]
     problems += [f'unknown game id: {game}' for game in sorted(set(used) - ours - rivals)]
     for path, text in strings_in(page):
         for hit in SECRET.findall(text):
